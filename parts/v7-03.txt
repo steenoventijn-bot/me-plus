@@ -1,0 +1,30 @@
+);d.setHours(h||0,m||0,0,0);d.setMinutes(d.getMinutes()-Number(e.reminderMinutes??0));const now=Date.now();if(e.repeat==='daily'){while(d.getTime()<now)d.setDate(d.getDate()+1)}else if(e.repeat==='weekly'){while(d.getTime()<now)d.setDate(d.getDate()+7)}else if(e.repeat==='monthly'){while(d.getTime()<now)d.setMonth(d.getMonth()+1)}return d}
+async function scheduleEventReminder(e){try{if(!e?.start||e.reminderMinutes==='off'){await v7api('cancel_reminder',{eventKey:`event:${e.id}`});return}const d=eventReminderDate(e);if(!d||d.getTime()<Date.now()-120000)return;await v7api('schedule_reminder',{eventKey:`event:${e.id}`,title:e.title||'Afspraak',kind:e.type==='growth'?'growth':'appointment',scheduledAt:d.toISOString(),repeat:e.repeat||'none',timezone:tz()})}catch(err){console.warn('reminder',err)}}
+async function syncReminders(){for(const e of state.events||[])await scheduleEventReminder(e)}
+function notificationSupported(){return 'serviceWorker'in navigator&&'PushManager'in window&&'Notification'in window}
+async function enablePush(){if(!notificationSupported()){const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);throw new Error(ios?'Zet me+ eerst op je beginscherm en open de app vanaf het icoon.':'Meldingen worden op dit apparaat niet ondersteund.')}const permission=await Notification.requestPermission();if(permission!=='granted')throw new Error('Geef me+ toestemming voor meldingen in je telefooninstellingen.');const cfg=await v7api('push_config');const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64ToUint8Array(cfg.publicKey)});const r=await v7api('register_push',{subscription:sub.toJSON()});server.pushEnabled=true;await syncReminders();await updateAppBadge(r.attention||0);return r}
+async function disablePush(){if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();if(sub){await v7api('disable_push',{endpoint:sub.endpoint});await sub.unsubscribe()}}server.pushEnabled=false;await updateAppBadge(0)}
+async function markAppOpen(){try{const r=await v7api('app_open');server.extras.attention=r.attention||0;await updateAppBadge(r.attention||0)}catch{}}
+
+function nav(){const badge=(server.stats?.requestCount||0)+(server.stats?.unreadMessages||0);return `<nav class="nav" aria-label="Hoofdnavigatie">${[['today','home','Vandaag'],['knowledge','book','Kennis'],['social','users','Vrienden'],['profile','user','Profiel']].map(([k,i,l])=>`<button data-nav="${k}" class="${view===k?'active':''}"><span class="nav-icon">${icon(i,21)}${k==='social'&&badge?`<i class="nav-badge">${Math.min(9,badge)}${badge>9?'+':''}</i>`:''}</span><span>${l}</span></button>`).join('')}</nav>`}
+function shell(body){return `<main class="screen">${body}</main>${nav()}`}
+function rankProgress(p){if(!p)return 0;if(!p.next)return 100;const low=(p.level-1)*10;return Math.max(0,Math.min(100,((p.points-low)/10)*100))}
+function eventOccurs(e,date){if(e.date===date)return true;if(!e.repeat||e.repeat==='none')return false;const a=new Date(e.date+'T12:00'),b=new Date(date+'T12:00');if(b<a)return false;if(e.repeat==='daily')return true;if(e.repeat==='weekly')return a.getDay()===b.getDay();if(e.repeat==='monthly')return a.getDate()===b.getDate();return false}
+function eventsFor(date){return state.events.filter(e=>eventOccurs(e,date)).sort((a,b)=>(a.start||'99:99').localeCompare(b.start||'99:99'))}
+function doneKey(e,date){return `${e.id}@${date}`}
+function eventKey(e,date){return `task:${doneKey(e,date)}`}
+function isDone(e,date){return e.type==='growth'?server.verifiedActivities.has(eventKey(e,date)):!!state.done[doneKey(e,date)]}
+function dailyArticle(){return server.articles[0]||null}
+function profilePill(){const p=server.profile;return p?`<div class="level-pill"><b>Lv. ${p.level}</b><span>${p.points} pt</span></div>`:''}
+function avatar(p,size='md'){return `<div class="avatar ${size}" data-seed="${esc(p?.avatarSeed||'')}">${esc(initials(p?.name||''))}</div>`}
+
+async function boot(){
+ if(!state.profileName){renderOnboarding();return}
+ try{
+   const r=await api('register',{name:state.profileName});server.profile=r.profile;
+   await Promise.all([loadKnowledge(),loadStats(),loadV7Data()]);
+   syncReminders();markAppOpen();
+ }catch(e){console.warn(e)}
+ render();
+}
+function rend
