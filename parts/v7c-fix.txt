@@ -95,4 +95,4 @@ async function finishRead(){
 
 function closeArticle(){clearInterval(readTimer);clearInterval(readSyncTimer);readTimer=null;readSyncTimer=null;readSession=null;el('article-page')?.remove();render()}
 
-async function registerSW(){if(!('serviceWorker'in navigator))return;try{const reg=await navigator.serviceWorker.register('/sw.js?v=7c');reg.update().catch(()=>{})}catch(e){console.warn('sw',e)}}
+async function registerSW(){if(!('serviceWorker'in navigator))return;try{const reg=await navigator.serviceWorker.register('./sw.js?v=8p');reg.update().catch(()=>{})}catch(e){console.warn('sw',e)}}
