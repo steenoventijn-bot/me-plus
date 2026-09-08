@@ -1,0 +1,22 @@
+/* me+ v13q8 — reference-traced World polish */
+.q7-world-shell{background:#29bde8!important}
+.q7-world-shell .mw-viewport{height:min(78vh,800px)!important;min-height:570px!important;background:linear-gradient(180deg,#56d9f3 0%,#39c8ec 44%,#1498d5 100%)!important}
+.q7-world-shell .mw-scene{height:920px!important;filter:saturate(1.04) contrast(1.015)}
+.q7-world-shell .q7-environment{background:none!important;overflow:visible!important}
+.q8-environment,.q8-world-art{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.q8-world-art{filter:drop-shadow(0 18px 24px rgba(33,91,95,.08))}
+.q8-static-tree,.q8-bench,.q8-bridge,.q8-dock,.q8-lamp{filter:drop-shadow(0 7px 6px rgba(40,76,50,.08))}
+.q8-water-glint{opacity:.42!important;mix-blend-mode:screen;background:linear-gradient(112deg,transparent 0 39%,rgba(255,255,255,.11) 47%,transparent 55%)!important;background-size:220% 100%!important}
+.q8-main-house{left:36.4%!important;top:14.2%!important;width:33.8%!important;height:37.8%!important;z-index:42!important}
+.q8-main-house .q7-house-sprite{filter:drop-shadow(0 16px 12px rgba(37,70,49,.2)) saturate(1.05) contrast(1.02)!important}
+.q8-main-house .q7-house-level-badge{display:none!important}
+.q7-world-shell .mw-character{filter:drop-shadow(0 9px 8px rgba(31,72,47,.17));z-index:64!important}
+.q7-world-shell .mw-character>span{opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity .16s ease}
+.q7-world-shell .mw-character:hover>span,.q7-world-shell .mw-character:focus-within>span{opacity:1}
+.q8-world-object{width:78px!important;height:82px!important;filter:drop-shadow(0 10px 8px rgba(35,73,48,.18))!important}
+.q8-world-object svg{width:100%!important;height:100%!important;overflow:visible}
+.q5-placement-hints,.q6-placement-hints,.q7-placement-hints,.mw-placement-hints,.mw-add-slots,.world-add-slots{display:none!important;visibility:hidden!important;pointer-events:none!important}
+.q7-world-shell .mw-grid,.q7-world-shell .mw-ground-grid{display:none!important}
+.q7-house-preview-sticky{background:linear-gradient(180deg,#55d6f3 0 42%,#77d276 43% 100%)!important}
+@media(max-width:520px){.q7-world-shell .mw-viewport{height:72vh!important;min-height:555px!important}.q8-main-house{left:36.5%!important;top:14.5%!important;width:34%!important;height:38%!important}}
+@media(prefers-reduced-motion:reduce){.q8-water-glint{animation:none!important}}
