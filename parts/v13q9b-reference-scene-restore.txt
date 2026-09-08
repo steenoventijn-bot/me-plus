@@ -1,0 +1,2 @@
+/* me+ v13q9b — restore the reference scene instead of flat q8 SVG */
+if(typeof q8EnvironmentSvg==='function')q8EnvironmentSvg=function(){return''};
