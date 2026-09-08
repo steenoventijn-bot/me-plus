@@ -1,0 +1,98 @@
+var readSyncTimer=null;
+
+function openGeneralSettings(){
+ const p=server.profile||{};
+ const pushOn=Notification.permission==='granted'&&!!server.push?.enabled;
+ const pushBlocked=Notification.permission==='denied';
+ const pushState=pushOn?'Ingeschakeld op deze iPhone':pushBlocked?'Geblokkeerd in iPhone-instellingen':'Uit';
+ const pushCopy=pushOn
+  ?'Blijft actief totdat je meldingen voor me+ in je iPhone-instellingen uitschakelt of de app van je beginscherm verwijdert.'
+  :pushBlocked
+   ?'Open Instellingen op je iPhone en sta meldingen voor me+ toe.'
+   :'Schakel dit één keer in voor afspraakmeldingen en het badgegetal op je homescreen.';
+ const w=openSheet(`<div class="sheet-top"><div><h2>Algemene instellingen</h2><p class="lead">Meldingen, privacy en jouw kennisvoorkeuren op één plek.</p></div><button class="icon-btn" data-close>${svg('close')}</button></div>
+ <div class="section settings-first"><div class="section-head"><div><h2>Meldingen</h2><p>Afspraken en badges op deze iPhone.</p></div></div><div class="setting"><div class="setting-main"><div class="setting-title" id="push-title">${pushState}</div><div class="setting-sub" id="push-state">${pushCopy}</div></div><button id="push-toggle" class="button ${pushOn?'soft':'primary'} small" ${pushOn?'disabled':''}>${pushOn?'✓ Ingeschakeld':'Inschakelen'}</button></div>${!standalone()?'<div class="notice" style="margin-top:10px">Op iPhone werken pushmeldingen voor me+ wanneer je de app via Safari op je beginscherm hebt gezet en hem vanaf dat icoon opent.</div>':''}</div>
+ <div class="section"><div class="section-head"><div><h2>Privacy</h2><p>Bepaal wat anderen van jouw voortgang mogen zien.</p></div></div>${settingToggle('shareTasks','Deel activiteiten','Vrienden kunnen zien welke verbeteractiviteiten je voltooit.',p.shareTasks)}${settingToggle('shareProof','Deel bewijsfoto’s','Alleen bij gedeelde activiteiten en alleen met vrienden.',p.shareProof)}${settingToggle('shareProgress','Deel voortgang','Laat punten, level en rang aan vrienden zien.',p.shareProgress)}<div class="setting"><div class="setting-main"><div class="setting-title">Wie ziet je profiel?</div><div class="setting-sub">Kies of niet-vrienden je voortgang al mogen zien.</div></div><select id="visibility" style="width:auto"><option value="everyone" ${p.profileVisibility==='everyone'?'selected':''}>Iedereen</option><option value="friends" ${p.profileVisibility==='friends'?'selected':''}>Vrienden</option></select></div><div class="setting"><div class="setting-main"><div class="setting-title">Vriendverzoeken</div><div class="setting-sub">Bepaal of anderen je mogen toevoegen.</div></div><select id="requests" style="width:auto"><option value="everyone" ${p.friendRequestPolicy==='everyone'?'selected':''}>Iedereen</option><option value="nobody" ${p.friendRequestPolicy==='nobody'?'selected':''}>Niemand</option></select></div></div>
+ <div class="section"><div class="section-head"><div><h2>Interesses</h2><p>Bepaal welke kennis je vaker ziet.</p></div></div><div class="genre-grid" id="settings-interests">${CATEGORIES.map(c=>`<button class="genre ${(p.interests||[]).includes(c)?'selected':''}" data-settings-genre="${esc(c)}">${svg(categoryIcon(c))}<b>${esc(c)}</b></button>`).join('')}</div></div>
+ <div class="section"><button id="settings-save" class="button primary full">Instellingen opslaan</button></div>`);
+ w.querySelector('[data-close]').onclick=()=>w.remove();
+ w.querySelectorAll('[data-settings-genre]').forEach(b=>b.onclick=()=>b.classList.toggle('selected'));
+ w.querySelectorAll('[data-setting]').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
+ const pushButton=w.querySelector('#push-toggle');
+ if(pushButton&&!pushOn)pushButton.onclick=async()=>{
+   pushButton.disabled=true;pushButton.textContent='Inschakelen…';
+   try{
+     await enablePush();
+     server.push.enabled=true;
+     w.querySelector('#push-title').textContent='Ingeschakeld op deze iPhone';
+     w.querySelector('#push-state').textContent='Blijft actief totdat je meldingen voor me+ in je iPhone-instellingen uitschakelt of de app van je beginscherm verwijdert.';
+     pushButton.textContent='✓ Ingeschakeld';pushButton.className='button soft small';pushButton.disabled=true;
+     await syncAllReminders();
+   }catch(e){toast(e.message);pushButton.textContent='Inschakelen';pushButton.disabled=false}
+ };
+ w.querySelector('#settings-save').onclick=async()=>{
+   const interests=[...w.querySelectorAll('[data-settings-genre].selected')].map(x=>x.dataset.settingsGenre);
+   try{
+     const r=await api('settings',{interests,shareTasks:w.querySelector('[data-setting="shareTasks"]').classList.contains('on'),shareProof:w.querySelector('[data-setting="shareProof"]').classList.contains('on'),shareProgress:w.querySelector('[data-setting="shareProgress"]').classList.contains('on'),profileVisibility:w.querySelector('#visibility').value,friendRequestPolicy:w.querySelector('#requests').value});
+     server.profile=r.profile;state.knowledgeSeen=true;save();await refreshBase();w.remove();render();toast('Instellingen opgeslagen.');
+   }catch(e){toast(e.message)}
+ };
+}
+
+function paintReadTimer(){
+ const t=el('read-timer');if(!t||!readSession)return;
+ const remain=Math.max(0,Math.ceil(readSession.visualRemaining??Math.max(0,(readSession.min||0)-(readSession.active||0))));
+ t.innerHTML=`<span><strong>${fmtSeconds(remain)}</strong>${remain?'actief lezen':'controleren…'}</span>`;
+}
+
+async function syncReadProgressV7c(){
+ if(!readSession?.sessionId||readSession.syncing||document.hidden)return;
+ readSession.syncing=true;
+ try{
+   const r=await api7('read_tick_v7',{sessionId:readSession.sessionId});
+   readSession.active=r.activeSeconds;
+   readSession.min=r.minSeconds;
+   readSession.visualRemaining=Math.max(0,r.minSeconds-r.activeSeconds);
+   paintReadTimer();
+   if(r.done)await finishRead();
+ }catch(e){console.warn(e)}finally{if(readSession)readSession.syncing=false}
+}
+
+async function openArticle(a){
+ if(!a)return;
+ clearInterval(readTimer);clearInterval(readSyncTimer);readTimer=null;readSyncTimer=null;
+ let start={alreadyRead:true,minSeconds:0,sessionId:null,activeSeconds:0};
+ try{start=await api7('start_read_v7',{articleId:a.id})}catch(e){console.warn(e)}
+ readSession={article:a,sessionId:start.sessionId,min:start.minSeconds||0,active:start.activeSeconds||0,visualRemaining:Math.max(0,(start.minSeconds||0)-(start.activeSeconds||0)),alreadyRead:start.alreadyRead,complete:false,syncing:false};
+ const page=document.createElement('div');page.className='article-page';page.id='article-page';
+ page.innerHTML=`<div class="article-inner"><button class="icon-btn article-close" id="article-close">${svg('close')}</button><div class="article-cat">${esc(a.category)} · ${readLabel(a)}</div><h1>${esc(a.title)}</h1><div class="article-lead">${esc(a.intro)}</div><div class="article-save"><button class="button line small" id="article-save">${server.saved.has(a.id)?'✓ Bewaard':'Bewaar voor later'}</button></div><div class="article-body"><p>${esc(a.body)}</p>${a.extra_fact?`<h3>Extra feit</h3><p>${esc(a.extra_fact)}</p>`:''}${a.why_it_matters?`<h3>Waarom dit interessant is</h3><p>${esc(a.why_it_matters)}</p>`:''}</div></div>${start.alreadyRead?'<div class="timer done"><span><strong>✓</strong>gelezen</span></div>':`<div class="timer" id="read-timer"><span><strong>${fmtSeconds(readSession.visualRemaining)}</strong>actief lezen</span></div>`}`;
+ document.body.appendChild(page);
+ el('article-close').onclick=()=>closeArticle();
+ el('article-save').onclick=async()=>{await toggleSave(a.id);el('article-save').textContent=server.saved.has(a.id)?'✓ Bewaard':'Bewaar voor later'};
+ if(!start.alreadyRead&&start.sessionId){
+   readTimer=setInterval(()=>{if(document.hidden||!readSession||readSession.complete)return;if(readSession.visualRemaining>0){readSession.visualRemaining=Math.max(0,readSession.visualRemaining-1);paintReadTimer()}else{syncReadProgressV7c()}},1000);
+   readSyncTimer=setInterval(syncReadProgressV7c,5000);
+ }
+}
+
+async function readTick(){return syncReadProgressV7c()}
+
+async function finishRead(){
+ if(readSession?.complete||!readSession?.sessionId)return;
+ readSession.complete=true;clearInterval(readTimer);clearInterval(readSyncTimer);readTimer=null;readSyncTimer=null;
+ try{
+   const r=await api7('complete_read_v7',{sessionId:readSession.sessionId,localDate:localISO()});
+   const t=el('read-timer');if(t){t.classList.add('done');t.innerHTML='<span><strong>✓</strong>gelezen</span>'}
+   if(r.firstRead){pointPop('+1 kennispunt');await refreshBase()}
+ }catch(e){
+   readSession.complete=false;
+   if(e?.data?.remaining!=null)readSession.visualRemaining=Math.max(0,Number(e.data.remaining)||0);
+   paintReadTimer();
+   if(!readTimer)readTimer=setInterval(()=>{if(document.hidden||!readSession||readSession.complete)return;if(readSession.visualRemaining>0){readSession.visualRemaining=Math.max(0,readSession.visualRemaining-1);paintReadTimer()}else{syncReadProgressV7c()}},1000);
+   if(!readSyncTimer)readSyncTimer=setInterval(syncReadProgressV7c,5000);
+ }
+}
+
+function closeArticle(){clearInterval(readTimer);clearInterval(readSyncTimer);readTimer=null;readSyncTimer=null;readSession=null;el('article-page')?.remove();render()}
+
+async function registerSW(){if(!('serviceWorker'in navigator))return;try{const reg=await navigator.serviceWorker.register('/sw.js?v=7c');reg.update().catch(()=>{})}catch(e){console.warn('sw',e)}}
