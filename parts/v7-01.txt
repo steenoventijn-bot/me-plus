@@ -1,0 +1,47 @@
+(()=>{'use strict';
+const API='https://npolnflektojripucyvq.supabase.co/functions/v1/me-plus-api';
+const V7_API='https://npolnflektojripucyvq.supabase.co/functions/v1/me-plus-v7-api';
+const STATE_KEY='meplus-v7';
+const DEVICE_KEY='meplus-device-token';
+const OLD_KEYS=['meplus-v6','meplus-v5','meplus-v4','meplus-v3','meplus-v2'];
+const RANKS=[
+ {name:'Starter',points:0,icon:'spark'},
+ {name:'Beginner',points:10,icon:'activity'},
+ {name:'Groeier',points:20,icon:'leaf'},
+ {name:'Professional',points:30,icon:'compass'},
+ {name:'Baas',points:40,icon:'shield'},
+ {name:'Elite',points:50,icon:'star'},
+ {name:'Expert',points:60,icon:'book'},
+ {name:'Meester',points:70,icon:'gem'},
+ {name:'Legende',points:80,icon:'flame'},
+ {name:'Topper',points:90,icon:'trophy'},
+ {name:'Me+ Legende',points:100,icon:'crown'}
+];
+const CATEGORIES=['Ruimte','Psychologie','Wetenschap','Geschiedenis','Technologie','Economie','Natuurkennis','Menselijk lichaam','Praktische kennis','Natuur','Cultuur'];
+let view='today', socialTab='friends', socialPeriod='week', knowledgeFilter='Alles';
+let server={profile:null,articles:[],friends:[],incomingRequests:[],outgoingRequests:[],feed:[],leaderboard:[],conversations:[],notifications:[],stats:null,verifiedActivities:new Set(),savedIds:new Set(),extras:{streak:0,saved:0,attention:0},pushEnabled:false};
+let state=loadState();
+server.verifiedActivities=new Set(state.verifiedActivities||[]);
+let readerState=null;
+
+function token(){let t=localStorage.getItem(DEVICE_KEY);if(!t){const a=new Uint8Array(32);crypto.getRandomValues(a);t=[...a].map(x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem(DEVICE_KEY,t)}return t}
+function loadState(){
+ const base={profileName:'',events:[],done:{},goals:[],checkins:{},knowledgeSeen:false,lastOpenDate:localISO(),verifiedActivities:[]};
+ try{const current=JSON.parse(localStorage.getItem(STATE_KEY)||'null');if(current)return {...base,...current}}catch{}
+ for(const k of OLD_KEYS){try{const old=JSON.parse(localStorage.getItem(k)||'null');if(old){base.profileName=old.profile?.name||old.profileName||'';base.events=Array.isArray(old.events)?old.events:[];base.done=old.done||{};base.goals=Array.isArray(old.goals)?old.goals:[];base.checkins=old.checkins||{};base.knowledgeSeen=!!old.knowledgeSeen;break}}catch{}}
+ localStorage.setItem(STATE_KEY,JSON.stringify(base));return base
+}
+function save(){localStorage.setItem(STATE_KEY,JSON.stringify(state))}
+function el(id){return document.getElementById(id)}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function api(op,data={}){return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op,token:token(),...data})}).then(async r=>{let j={};try{j=await r.json()}catch{}if(!r.ok){const err=new Error(j.error||'Er ging iets mis.');err.data=j;throw err}return j})}
+function v7api(op,data={}){return fetch(V7_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op,token:token(),...data})}).then(async r=>{let j={};try{j=await r.json()}catch{}if(!r.ok){const err=new Error(j.error||'Er ging iets mis.');err.data=j;throw err}return j})}
+function uid(){return crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function localISO(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function fmtDate(d=new Date()){return new Intl.DateTimeFormat('nl-NL',{weekday:'long',day:'numeric',month:'long'}).format(d)}
+function greeting(){const h=new Date().getHours();return h<5?'Goedenacht':h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond'}
+function initials(name=''){return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()||'').join('')||'+'}
+function toast(t){const x=el('toast');if(!x)return;x.textContent=t;x.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>x.classList.remove('show'),2200)}
+function pointBurst(label='+1 punt'){const x=document.createElement('div');x.className='point-burst';x.innerHTML=`${icon('spark',18)}<b>${esc(label)}</b>`;document.body.appendChild(x);requestAnimationFrame(()=>x.classList.add('go'));setTimeout(()=>x.remove(),1500)}
+function icon(name,size=22){const paths={
+ home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V
