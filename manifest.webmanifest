@@ -1,16 +1,12 @@
 {
-  "name": "me+ — iedere dag een stap beter",
-  "short_name": "me+",
-  "description": "Jouw rustige plek voor planning, gewoontes en dagelijkse groei.",
-  "lang": "nl-NL",
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#f4f1e9",
-  "theme_color": "#123d37",
-  "categories": ["productivity", "lifestyle"],
-  "icons": [
-    {"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
-  ]
+  "name":"me+",
+  "short_name":"me+",
+  "description":"Plannen, groeien, leren en elkaar motiveren.",
+  "lang":"nl-NL",
+  "start_url":"/",
+  "scope":"/",
+  "display":"standalone",
+  "background_color":"#f5f0e7",
+  "theme_color":"#10231f",
+  "icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
