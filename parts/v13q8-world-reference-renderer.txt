@@ -1,0 +1,70 @@
+/* me+ v13q8 — reference-traced 2.5D World, no baked placement boxes */
+function q8TreeSvg(x,y,s=1,v=0){
+  const p=v%3;
+  const dark=['#3d9954','#409d58','#348b4c'][p],mid=['#58b966','#62c56c','#4faf5e'][p],light=['#79d77d','#7ede82','#70cf76'][p];
+  return `<g class="q8-static-tree" transform="translate(${x} ${y}) scale(${s})">
+    <ellipse cx="4" cy="35" rx="38" ry="11" fill="rgba(31,80,52,.18)"/>
+    <path d="M-7 31-3-19 10-19 13 31Z" fill="#8a5e3e"/><path d="M-1 31 2-20 8-19 7 31Z" fill="#a9754e" opacity=".72"/>
+    <circle cx="-20" cy="-22" r="27" fill="${dark}"/><circle cx="7" cy="-34" r="32" fill="${light}"/>
+    <circle cx="30" cy="-16" r="27" fill="${mid}"/><circle cx="-7" cy="2" r="30" fill="${mid}"/><circle cx="20" cy="5" r="28" fill="${dark}"/>
+    <circle cx="-2" cy="-38" r="15" fill="rgba(255,255,255,.18)"/><circle cx="19" cy="-29" r="9" fill="rgba(255,255,255,.11)"/>
+  </g>`
+}
+function q8BushSvg(x,y,s=1,v=0){const c=v%2?'#4da95d':'#58b967',l=v%2?'#6bc878':'#74cf7c';return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="16" rx="29" ry="8" fill="rgba(36,86,52,.14)"/><circle cx="-15" cy="1" r="17" fill="${c}"/><circle cx="4" cy="-7" r="21" fill="${l}"/><circle cx="19" cy="4" r="16" fill="${c}"/><circle cx="2" cy="5" r="18" fill="${c}"/><circle cx="-3" cy="-14" r="7" fill="rgba(255,255,255,.12)"/></g>`}
+function q8FlowerPatch(x,y,s=1){const f=[[-24,3,'#fff'],[-14,-7,'#f7a2ba'],[-5,6,'#fff1b7'],[7,-6,'#fff'],[17,5,'#f6a4c4'],[27,-3,'#fff'],[3,11,'#ffd36e']];return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="10" rx="37" ry="14" fill="#4da95c" opacity=".48"/>${f.map(([a,b,c])=>`<circle cx="${a}" cy="${b}" r="5" fill="${c}"/><circle cx="${a}" cy="${b}" r="2" fill="#e0a440"/>`).join('')}</g>`}
+function q8RockSvg(x,y,s=1){return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="10" rx="22" ry="7" fill="rgba(70,68,60,.14)"/><path d="M-20 7-11-10 7-15 22-1 16 12-12 14Z" fill="url(#q8rock)"/><path d="M-10-7 7-11 16-1 4 2Z" fill="rgba(255,255,255,.2)"/></g>`}
+function q8LampSvg(x,y,s=1){return `<g class="q8-lamp" transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="31" rx="13" ry="5" fill="rgba(25,61,48,.18)"/><rect x="-3" y="-4" width="6" height="35" rx="3" fill="#33474a"/><path d="M-11-8h22L8-28H-8Z" fill="#2c3f42"/><rect x="-7" y="-24" width="14" height="14" rx="3" fill="#ffd76b"/><path d="M-9-29 0-38 9-29Z" fill="#27393c"/><circle cx="0" cy="-17" r="17" fill="#ffd66b" opacity=".11"/></g>`}
+function q8EnvironmentSvg(){
+  const trees=[[170,305,1.08,0],[282,190,1.03,1],[432,155,1.07,2],[665,166,1.08,0],[806,254,1.04,1],[855,390,.92,2],[802,563,.93,0],[690,655,.9,1],[560,700,.82,2],[365,682,.78,1],[211,575,.8,0],[138,440,.88,2],[607,302,.78,1],[747,446,.76,0],[347,385,.72,2]];
+  const bushes=[[230,256,.62,0],[330,226,.72,1],[534,204,.62,0],[737,278,.68,1],[790,355,.58,0],[681,572,.65,1],[582,626,.7,0],[436,650,.6,1],[268,590,.62,0],[191,492,.58,1],[315,469,.55,0],[620,442,.55,1]];
+  const rocks=[[126,492,.82],[192,642,.67],[324,710,.72],[474,729,.68],[642,705,.75],[875,515,.8],[844,293,.65],[704,213,.6],[246,223,.58],[172,352,.56]];
+  return `<svg class="q8-world-art" viewBox="0 0 1000 920" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <defs>
+    <linearGradient id="q8water" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#52d8f4"/><stop offset=".42" stop-color="#2ec3ea"/><stop offset="1" stop-color="#1195d5"/></linearGradient>
+    <radialGradient id="q8shallows"><stop offset="0" stop-color="#9aeee5" stop-opacity=".75"/><stop offset=".7" stop-color="#6bdedc" stop-opacity=".32"/><stop offset="1" stop-color="#5ad2da" stop-opacity="0"/></radialGradient>
+    <linearGradient id="q8cliff" x1=".2" y1="0" x2=".8" y2="1"><stop stop-color="#b69979"/><stop offset=".55" stop-color="#927960"/><stop offset="1" stop-color="#705d4d"/></linearGradient>
+    <linearGradient id="q8sand" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe5a6"/><stop offset=".55" stop-color="#f5cd7a"/><stop offset="1" stop-color="#d8aa5e"/></linearGradient>
+    <linearGradient id="q8grass" x1=".05" y1="0" x2=".95" y2="1"><stop stop-color="#a5e97d"/><stop offset=".48" stop-color="#73d170"/><stop offset="1" stop-color="#4cae5f"/></linearGradient>
+    <linearGradient id="q8pond" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#63dfe5"/><stop offset=".52" stop-color="#31bcd3"/><stop offset="1" stop-color="#168eaf"/></linearGradient>
+    <linearGradient id="q8wood" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d39859"/><stop offset="1" stop-color="#8b5c3d"/></linearGradient>
+    <linearGradient id="q8rock" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#aaa89c"/><stop offset="1" stop-color="#74756e"/></linearGradient>
+    <filter id="q8shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="15" stdDeviation="13" flood-color="#31585d" flood-opacity=".22"/></filter>
+    <clipPath id="q8grassClip"><path d="M116 387C135 252 287 151 475 137c205-16 379 55 428 188 40 110-5 230-119 312-108 78-260 116-415 98-150-18-270-90-304-190-18-53-15-108 1-158 13-40 28-21 50 0Z"/></clipPath>
+  </defs>
+  <rect width="1000" height="920" fill="url(#q8water)"/>
+  <g class="q8-ocean-lines" fill="none" stroke="#fff" stroke-linecap="round" opacity=".28">
+    <path d="M30 205c54-13 103 13 157 0s103 13 157 0M700 155c42-10 80 10 122 0s80 10 122 0M22 742c58-14 109 14 167 0s109 14 167 0M664 792c54-13 103 13 157 0s103 13 157 0" stroke-width="5"/>
+    <path d="M80 105c34-8 64 8 98 0m635 518c31-8 59 8 90 0M70 600c31-7 58 7 89 0" stroke-width="3"/>
+  </g>
+  <ellipse cx="510" cy="520" rx="445" ry="337" fill="url(#q8shallows)"/>
+  <path d="M75 414C91 261 260 145 474 132c226-13 414 75 461 226 39 125-15 260-143 353-119 87-286 127-455 105C175 795 50 714 24 603-1 497 31 448 75 414Z" fill="#397b86" opacity=".18" transform="translate(2 26)" filter="url(#q8shadow)"/>
+  <path class="q8-cliff" d="M82 407C103 265 267 158 475 145c219-13 401 69 447 211 38 117-13 244-136 332-114 82-274 120-437 100-158-20-279-96-307-200-25-94 3-143 40-181Z" fill="url(#q8cliff)" transform="translate(0 58)"/>
+  <path d="M82 407C103 265 267 158 475 145c219-13 401 69 447 211 38 117-13 244-136 332-114 82-274 120-437 100-158-20-279-96-307-200-25-94 3-143 40-181Z" fill="url(#q8sand)" transform="translate(0 30)"/>
+  <path class="q8-grass" d="M116 387C135 252 287 151 475 137c205-16 379 55 428 188 40 110-5 230-119 312-108 78-260 116-415 98-150-18-270-90-304-190-18-53-15-108 1-158 13-40 28-21 50 0Z" fill="url(#q8grass)"/>
+  <g class="q8-cliff-lines" fill="none" stroke="#6f5b49" stroke-width="5" stroke-linecap="round" opacity=".37">
+    <path d="M72 533c8 37 22 73 44 105m9-91c5 42 18 78 38 110m28-82c5 34 14 66 30 96m529-33c-20 36-46 67-76 92m127-134c-16 43-40 79-72 109m121-159c-9 40-29 81-59 116"/>
+  </g>
+  <g clip-path="url(#q8grassClip)" opacity=".18" stroke="#2e9451" stroke-width="3" stroke-linecap="round"><path d="M176 357l9-14m19 78 10-13m93-187 8-13m28 167 10-13m73-150 9-14m29 225 10-13m79-194 8-13m52 179 9-13m58-108 9-13m58 199 8-13m-514 154 9-13m97 48 9-14m112-16 8-12m95-41 9-13"/></g>
+  <g class="q8-paths" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M503 722C482 668 489 617 510 567c23-55 18-96-5-139-20-38 4-81 32-120M511 561c-67-32-133-48-198-64M509 504c70-12 133-47 186-100M488 623c73 2 142 25 202 64M477 440c-55-29-103-66-137-110" stroke="#e6b970" stroke-width="50"/>
+    <path d="M503 722C482 668 489 617 510 567c23-55 18-96-5-139-20-38 4-81 32-120M511 561c-67-32-133-48-198-64M509 504c70-12 133-47 186-100M488 623c73 2 142 25 202 64M477 440c-55-29-103-66-137-110" stroke="#f5d28c" stroke-width="38" opacity=".92"/>
+  </g>
+  <g class="q8-pond" transform="translate(315 494)"><ellipse cx="0" cy="10" rx="91" ry="56" fill="#62855f" opacity=".34"/><path d="M-82 1C-70-36-28-52 16-43 59-34 84-9 76 21 68 50 23 61-19 55-60 49-91 31-82 1Z" fill="url(#q8pond)"/><path d="M-70-4C-48-26-17-33 12-29" fill="none" stroke="#a7f0ed" stroke-width="6" opacity=".45" stroke-linecap="round"/><ellipse cx="-26" cy="5" rx="16" ry="8" fill="#5eb46c" transform="rotate(-15 -26 5)"/><circle cx="-22" cy="1" r="5" fill="#f6a7cd"/><ellipse cx="27" cy="25" rx="14" ry="7" fill="#66b66d" transform="rotate(12 27 25)"/><circle cx="30" cy="22" r="4.5" fill="#f8bfdc"/></g>
+  <g class="q8-bridge" transform="translate(267 394) rotate(-13)"><ellipse cx="0" cy="26" rx="68" ry="14" fill="rgba(40,70,55,.15)"/><path d="M-60 8C-28-10 28-10 60 8v30c-32-17-88-17-120 0Z" fill="#9a6341"/><path d="M-52 11C-24-2 24-2 52 11" fill="none" stroke="#d69a5d" stroke-width="11" stroke-dasharray="15 5"/><path d="M-53 3v38M53 3v38" stroke="#674733" stroke-width="5"/></g>
+  <g class="q8-dock" transform="translate(745 705) rotate(13)"><path d="M-18-2H94V49H-18Z" fill="url(#q8wood)"/><path d="M-5 3v41M18 3v41M41 3v41M64 3v41M87 3v41" stroke="#70492f" stroke-width="3" opacity=".45"/><rect x="-25" y="-11" width="8" height="72" rx="4" fill="#67452f"/><rect x="92" y="-8" width="8" height="70" rx="4" fill="#67452f"/></g>
+  <g class="q8-bench" transform="translate(286 578) rotate(4)"><ellipse cx="0" cy="27" rx="43" ry="9" fill="rgba(35,78,50,.18)"/><rect x="-39" y="-9" width="78" height="14" rx="6" fill="#b87345"/><rect x="-37" y="9" width="74" height="13" rx="5" fill="#d08750"/><path d="M-28 18v20M28 18v20" stroke="#4a4e47" stroke-width="6"/></g>
+  ${trees.map(t=>q8TreeSvg(...t)).join('')}
+  ${bushes.map(b=>q8BushSvg(...b)).join('')}
+  ${rocks.map(r=>q8RockSvg(...r)).join('')}
+  ${q8FlowerPatch(238,335,.72)}${q8FlowerPatch(362,258,.82)}${q8FlowerPatch(604,246,.74)}${q8FlowerPatch(764,331,.72)}${q8FlowerPatch(692,528,.75)}${q8FlowerPatch(566,607,.7)}${q8FlowerPatch(392,613,.66)}${q8FlowerPatch(224,532,.7)}
+  ${q8LampSvg(243,533,.94)}${q8LampSvg(445,604,.92)}${q8LampSvg(585,523,.9)}${q8LampSvg(690,425,.92)}
+  <g class="q8-pebbles" fill="#d8c79f" opacity=".9"><circle cx="102" cy="565" r="7"/><circle cx="125" cy="605" r="5"/><circle cx="865" cy="560" r="7"/><circle cx="817" cy="655" r="6"/><circle cx="175" cy="681" r="5"/><circle cx="731" cy="742" r="5"/></g>
+  </svg>`
+}
+function q8DynamicTreeSvg(){return `<svg viewBox="0 0 90 98" aria-hidden="true"><ellipse cx="45" cy="86" rx="29" ry="8" fill="rgba(32,76,48,.18)"/><path d="M38 80 41 38h10l4 42Z" fill="#8b5d3d"/><circle cx="27" cy="38" r="20" fill="#3f9e55"/><circle cx="46" cy="27" r="25" fill="#76d67b"/><circle cx="65" cy="42" r="20" fill="#54b963"/><circle cx="42" cy="49" r="23" fill="#5fc56b"/><circle cx="41" cy="20" r="9" fill="rgba(255,255,255,.16)"/></svg>`}
+function q8DynamicBenchSvg(){return `<svg viewBox="0 0 100 80" aria-hidden="true"><ellipse cx="50" cy="68" rx="36" ry="8" fill="rgba(33,72,49,.16)"/><rect x="15" y="22" width="70" height="13" rx="5" fill="#b87546"/><rect x="18" y="41" width="64" height="12" rx="4" fill="#d68a52"/><path d="M27 49v20M73 49v20" stroke="#4b4e48" stroke-width="6"/></svg>`}
+function q8DynamicLampSvg(){return `<svg viewBox="0 0 80 100" aria-hidden="true"><ellipse cx="40" cy="88" rx="16" ry="5" fill="rgba(23,64,47,.18)"/><rect x="37" y="38" width="6" height="50" rx="3" fill="#33474a"/><path d="M26 35h28l-4-24H30Z" fill="#293c40"/><rect x="31" y="16" width="18" height="15" rx="3" fill="#ffd86e"/><path d="m29 12 11-10 11 10Z" fill="#26383b"/></svg>`}
+function q8DynamicPondSvg(){return `<svg viewBox="0 0 120 78" aria-hidden="true"><ellipse cx="60" cy="43" rx="50" ry="28" fill="#4bb6c6"/><ellipse cx="39" cy="39" rx="13" ry="6" fill="#61b56c"/><circle cx="40" cy="36" r="4" fill="#f6a8ce"/><ellipse cx="79" cy="48" rx="12" ry="6" fill="#66b970"/></svg>`}
+const q8ItemFallback=q7ItemArt;
+q7ItemArt=function(key){const k=String(key||'');if(k.includes('tree')||k==='palm_tree')return q8DynamicTreeSvg();if(k==='bench_wood'||k.includes('bench'))return q8DynamicBenchSvg();if(k==='lamp_glow'||k.includes('lamp'))return q8DynamicLampSvg();if(k==='pond_small'||k==='pond_lily'||k.includes('pond'))return q8DynamicPondSvg();return q8ItemFallback(key)};
+function mwSceneHtml(){const d=mw.data;if(!d)return'';const items=(d.items||[]).map(it=>{const pos=q6ItemPos(it),p=q7Iso(pos.x,pos.y),z=Math.round(30+p.y/18);return `<button class="mw-object q7-world-object q8-world-object ${mw.selectedItem===it.id?'selected':''}" data-mw-item="${it.id}" style="left:${p.x}px;top:${p.y}px;--rot:${it.rotation||0}deg;z-index:${z}">${q7ItemArt(it.item_key)}</button>`}).join('');const ownId=q7OwnId(),local=server.v10?.me||server.profile;let ownerProfile=d.owner;if(d.owner?.id===ownId&&local?.avatarConfig)ownerProfile={...d.owner,avatarConfig:v13q4NormalizeAvatar(local.avatarConfig)};const mePos=d.isOwner?{x:420,y:610}:q7Iso(11.9,13.4),ownerPos=d.isOwner?mePos:q7Iso(10.4,11.7);const ownerAvatar=`<div class="mw-character owner-char ${d.isOwner?'me-char':''}" id="${d.isOwner?'mw-player-me':'mw-player-owner'}" style="left:${ownerPos.x}px;top:${ownerPos.y}px">${v10Avatar(ownerProfile,'md')}<span>${esc(ownerProfile.name.split(' ')[0])}</span></div>`;const selfVisitor=!d.isOwner?`<div class="mw-character me-char" id="mw-player-me" style="left:${mePos.x}px;top:${mePos.y}px">${v10Avatar(local,'md')}<span>Jij</span></div>`:'';const others=(d.visitors||[]).filter(v=>v.id!==ownId&&v.id!==d.owner.id).slice(0,4).map((v,i)=>{const p=q7Iso(6.8+i*1.35,14.6-(i%2)*1.4);return `<div class="mw-character visitor-char" style="left:${p.x}px;top:${p.y}px">${v10Avatar(v,'sm')}<span>${esc(v.name.split(' ')[0])}</span></div>`}).join('');return `<div class="q7-environment q8-environment">${q8EnvironmentSvg()}</div><div class="q7-water-glint q8-water-glint"></div><div class="q7-main-house q8-main-house">${q7HouseMarkup(d.world.house)}</div>${items}${ownerAvatar}${selfVisitor}${others}`}
