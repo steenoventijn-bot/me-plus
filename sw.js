@@ -1,6 +1,6 @@
-const CACHE='me-plus-v8p';
+const CACHE='me-plus-v9p';
 const PUSH_CACHE='me-plus-push-dedupe-v8';
-const FILES=['./','./index.html','./app.js?v=8p','./styles.css?v=6','./styles-v7b.css?v=8p','./styles-v7c.css?v=8p','./styles-v8.css?v=8p','./parts/v7b-1.txt?v=8p','./parts/v7b-2a.txt?v=8p','./parts/v7b-2b.txt?v=8p','./parts/v7b-3a.txt?v=8p','./parts/v7b-3b.txt?v=8p','./parts/v7c-fix.txt?v=8p','./parts/v8-fix.txt?v=8p','./manifest.webmanifest','./icon.svg'];
+const FILES=['./','./index.html','./app.js?v=9p','./styles.css?v=6','./styles-v7b.css?v=9p','./styles-v7c.css?v=9p','./styles-v8.css?v=9p','./styles-v9.css?v=9p','./parts/v7b-1.txt?v=9p','./parts/v7b-2a.txt?v=9p','./parts/v7b-2b.txt?v=9p','./parts/v7b-3a.txt?v=9p','./parts/v7b-3b.txt?v=9p','./parts/v7c-fix.txt?v=9p','./parts/v8-fix.txt?v=9p','./parts/v9-ui.txt?v=9p','./parts/v9-media.txt?v=9p','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE&&x!==PUSH_CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);const core=e.request.mode==='navigate'||u.origin===location.origin;if(core)e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{if(r.ok){const x=r.clone();caches.open(CACHE).then(c=>c.put(e.request,x))}return r}).catch(()=>caches.match(e.request).then(x=>x||caches.match('./index.html'))));});
