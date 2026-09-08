@@ -1,6 +1,6 @@
 /* me+ v11 runtime sync */
-async function registerSW(){if(!('serviceWorker'in navigator))return;try{const reg=await navigator.serviceWorker.register('./sw.js?v=11f');reg.update().catch(()=>{})}catch(e){console.warn('sw',e)}}
+async function registerSW(){if(!('serviceWorker'in navigator))return;try{const reg=await navigator.serviceWorker.register('./sw.js?v=12w');reg.update().catch(()=>{})}catch(e){console.warn('sw',e)}}
 let v11FocusBusy=false;
-async function v11ForegroundSync(){if(v11FocusBusy||!server.profile?.id)return;v11FocusBusy=true;try{await v11LoadServerState(false);await refreshBase();if(view==='social')await v11RefreshSocialNow();else render()}catch(e){console.warn('foreground sync',e)}finally{v11FocusBusy=false}}
+async function v11ForegroundSync(){if(v11FocusBusy||!server.profile?.id)return;v11FocusBusy=true;try{await v11LoadServerState(false);await refreshBase();if(view==='social')await v11RefreshSocialNow();else if(view==='world')await mwLoad(mw.ownerId||server.profile.id,true);else render()}catch(e){console.warn('foreground sync',e)}finally{v11FocusBusy=false}}
 window.addEventListener('focus',()=>v11ForegroundSync());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)v11ForegroundSync()});
