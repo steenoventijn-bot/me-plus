@@ -1,0 +1,18 @@
+/* me+ v10 runtime safety */
+const v10OpenBattleActive=v10OpenBattle;
+async function v10OpenPendingBattle(detail){
+ const b=detail.battle,p=detail.profiles||{},mine=b.opponent_id===server.profile?.id,other=mine?p.challenger:p.opponent;
+ const page=document.createElement('div');page.id='v10-battle-page';page.className='v10-fullscreen v10-battle-page pending';
+ page.innerHTML=`<div class="v10-screen-head"><button class="v10-back" data-close>‹</button><span>⚔️ BATTLE</span><i></i></div><div class="v10-result-title"><span>${mine?'JIJ BENT UITGEDAAGD':'UITDAGING VERSTUURD'}</span><h1>${mine?`${esc(other?.name||'Een vriend')} daagt je uit`:`Wachten op ${esc(other?.name||'je vriend')}`}</h1></div><div class="v10-battle-vs">${v10Avatar(server.v10.me||server.profile,'lg')}<div><strong>VS</strong><small>${esc(detail.battle.metricLabel||v10Metric(b.metric)[2])}</small></div>${v10Avatar(other,'lg')}</div><div class="v10-battle-meta"><b>${v10Metric(b.metric)[3]} ${esc(detail.battle.metricLabel||v10Metric(b.metric)[2])}</b><span>${v10DurationLabel(b.duration_hours)}</span></div>${mine?`<div class="v10-profile-actions"><button id="v10-pending-decline">Weigeren</button><button id="v10-pending-accept">Accepteren</button></div>`:'<div class="notice">Je vriend krijgt deze uitdaging ook in de chat en via een melding als meldingen aanstaan.</div>'}`;
+ document.body.appendChild(page);document.body.classList.add('v10-modal-open');
+ page.querySelector('[data-close]').onclick=v10CloseBattle;
+ page.querySelector('#v10-pending-decline')?.addEventListener('click',async()=>{v10CloseBattle();await v10RespondBattle(b.id,'decline')});
+ page.querySelector('#v10-pending-accept')?.addEventListener('click',async()=>{v10CloseBattle();await v10RespondBattle(b.id,'accept')});
+}
+v10OpenBattle=async function(id){
+ clearInterval(v10BattleTimer);
+ let d;try{d=await api10('battle_detail',{battleId:id})}catch(e){return toast(e.message)}
+ if(d.battle.status==='pending')return v10OpenPendingBattle(d);
+ return v10OpenBattleActive(id)
+}
+async function registerSW(){if(!('serviceWorker'in navigator))return;try{const reg=await navigator.serviceWorker.register('./sw.js?v=10f');reg.update().catch(()=>{})}catch(e){console.warn('sw',e)}}
