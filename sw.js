@@ -1,5 +1,5 @@
-const CACHE='me-plus-v7b2';
-const FILES=['/','/index.html','/app.js?v=7b2','/styles.css?v=6','/styles-v7b.css?v=7b2','/parts/v7b-1.txt?v=7b2','/parts/v7b-2a.txt?v=7b2','/parts/v7b-2b.txt?v=7b2','/parts/v7b-3a.txt?v=7b2','/parts/v7b-3b.txt?v=7b2','/manifest.webmanifest','/icon.svg'];
+const CACHE='me-plus-v7c';
+const FILES=['/','/index.html','/app.js?v=7c','/styles.css?v=6','/styles-v7b.css?v=7c','/styles-v7c.css?v=7c','/parts/v7b-1.txt?v=7c','/parts/v7b-2a.txt?v=7c','/parts/v7b-2b.txt?v=7c','/parts/v7b-3a.txt?v=7c','/parts/v7b-3b.txt?v=7c','/parts/v7c-fix.txt?v=7c','/manifest.webmanifest','/icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);const core=e.request.mode==='navigate'||u.origin===location.origin;if(core)e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{if(r.ok){const x=r.clone();caches.open(CACHE).then(c=>c.put(e.request,x))}return r}).catch(()=>caches.match(e.request).then(x=>x||caches.match('/index.html'))));});
