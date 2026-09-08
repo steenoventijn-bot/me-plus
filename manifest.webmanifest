@@ -2,11 +2,10 @@
   "name":"me+",
   "short_name":"me+",
   "description":"Plannen, groeien, leren en elkaar motiveren.",
-  "lang":"nl-NL",
   "start_url":"/",
   "scope":"/",
   "display":"standalone",
-  "background_color":"#f5f0e7",
-  "theme_color":"#10231f",
+  "background_color":"#f7f6f1",
+  "theme_color":"#f7f6f1",
   "icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
