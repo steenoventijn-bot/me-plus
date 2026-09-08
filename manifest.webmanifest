@@ -2,14 +2,16 @@
   "id": "./",
   "name": "me+ — iedere dag een stap beter",
   "short_name": "me+",
-  "description": "Planning, kennis, vrienden en echte dagelijkse voortgang.",
+  "description": "Planning, kennis, vrienden, progressie en jouw eigen Me+ World.",
   "lang": "nl-NL",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f7f6f1",
-  "theme_color": "#f7f6f1",
+  "background_color": "#f4f1e9",
+  "theme_color": "#1f6b55",
   "icons": [
-    {"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+    {"src":"./assets/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"./assets/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"},
+    {"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}
   ]
 }
