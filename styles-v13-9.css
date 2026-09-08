@@ -1,0 +1,45 @@
+/* me+ v13q7 — reference-locked premium World renderer */
+:root{--q7-scene:none;--q7-house:none}
+.q7-world-shell{background:linear-gradient(180deg,#47B8FF 0%,#86D8FF 19%,#4FD6F7 45%,#1597E5 100%)!important}
+.q7-world-shell .mw-viewport{height:min(76vh,780px)!important;min-height:560px!important;background:linear-gradient(180deg,#47B8FF 0,#86D8FF 20%,#4FD6F7 46%,#1597E5 100%)!important;overflow:hidden}
+.q7-world-shell .mw-viewport:before,.q7-world-shell .mw-viewport:after{display:none!important}
+.q7-world-shell .mw-scene{width:1000px!important;height:920px!important;margin-left:-500px!important;margin-top:-460px!important;transition:none!important;will-change:transform;contain:layout style paint}
+.q7-environment{position:absolute;inset:0;background-image:var(--q7-scene);background-position:center;background-size:100% 100%;background-repeat:no-repeat;pointer-events:none;z-index:1;transform:translateZ(0)}
+.q7-water-glint{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(105deg,transparent 0 42%,rgba(255,255,255,.08) 49%,transparent 56%);background-size:220% 100%;animation:q7glint 12s ease-in-out infinite;mix-blend-mode:screen;opacity:.55}
+@keyframes q7glint{50%{background-position:100% 0}}
+.q7-main-house{position:absolute!important;left:37.2%!important;top:13.3%!important;width:35.1%!important;height:39.9%!important;transform:none!important;z-index:24!important;pointer-events:none}
+.q7-house-sprite{position:absolute;inset:0;background:var(--q7-house) center/100% 100% no-repeat;filter:drop-shadow(0 12px 12px rgba(40,66,47,.13));border-radius:22px;overflow:hidden}
+.q7-house-roof-tint{position:absolute;left:21%;top:15%;width:60%;height:39%;clip-path:polygon(49% 0,100% 40%,87% 100%,15% 100%,0 42%);background:var(--roof,#4E7FE8);mix-blend-mode:color;opacity:.56}
+.q7-house-wall-tint{position:absolute;left:29%;top:44%;width:43%;height:33%;clip-path:polygon(0 6%,100% 6%,100% 100%,0 100%);background:var(--wall,#F7F1E8);mix-blend-mode:color;opacity:.42}
+.q7-house-door{position:absolute;left:46.4%;top:61.5%;width:8.2%;height:17%;border-radius:10px 10px 4px 4px;background:var(--door,#8B5A2B);box-shadow:inset 0 0 0 2px rgba(76,52,33,.22),inset 4px 0 6px rgba(255,255,255,.1)}
+.q7-house-door.round{border-radius:45% 45% 6px 6px}
+.q7-window{position:absolute;background:linear-gradient(135deg,#fff0ad,#f7bc56);border:3px solid var(--frame,#fff8e8);box-shadow:0 0 12px rgba(255,212,90,.44),inset 0 0 0 1px rgba(63,93,111,.16)}
+.q7-window.w1{left:37%;top:57%}.q7-window.w2{left:62%;top:57%}.q7-window.w3{left:48%;top:38%}
+.q7-window.classic{width:7.5%;height:8.5%;border-radius:4px}.q7-window.wide{width:10%;height:6.5%;border-radius:5px}.q7-window.round{width:8%;aspect-ratio:1;border-radius:50%}.q7-window.modern{width:6%;height:10.5%;border-radius:3px}
+.q7-house-fence-none{display:none}
+.q7-house-decor-minimal .q7-house-garden-mask{opacity:.25}
+.q7-house-level-badge{position:absolute;right:8%;bottom:7%;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.9);font:800 9px/1 system-ui;color:#38514a;box-shadow:0 3px 10px rgba(37,70,55,.12)}
+.q7-world-object{z-index:35!important;width:70px!important;height:74px!important;filter:drop-shadow(0 9px 8px rgba(41,68,46,.16));touch-action:none;will-change:transform}
+.q7-world-object svg{overflow:visible}
+.q7-world-object.selected:after{width:38px!important;height:18px!important;bottom:-2px!important;background:rgba(91,222,124,.26)!important;border:2px solid rgba(255,255,255,.88)!important;box-shadow:0 0 0 3px rgba(91,222,124,.12)!important}
+.q6-placement-hints,.q5-placement-hints,.q7-placement-hints{display:none!important}
+.q7-placement-ghost:after{content:"";position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);width:var(--fpw,30px);height:var(--fph,16px);border-radius:50%;background:rgba(58,196,98,.24);border:2px solid rgba(255,255,255,.85);box-shadow:0 0 0 4px rgba(58,196,98,.1)}
+.q7-placement-ghost.invalid:after{background:rgba(224,84,84,.24);box-shadow:0 0 0 4px rgba(224,84,84,.1)}
+.q7-placement-ghost{position:fixed!important;z-index:30000!important;pointer-events:none!important;will-change:transform}
+.q7-house-editor-sheet .sheet{max-height:94dvh!important;overflow:hidden!important;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.q7-house-editor{display:grid;grid-template-rows:auto minmax(220px,38vh) auto auto;gap:12px;min-height:0}
+.q7-house-preview-sticky{position:relative;min-height:220px;border-radius:26px;overflow:hidden;background:linear-gradient(180deg,#69cef8 0 26%,#51d2ef 27% 46%,#94df6d 47% 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);display:grid;place-items:center}
+.q7-house-preview-sticky .q7-house-preview-stage{position:relative;width:min(360px,86vw);aspect-ratio:330/345}
+.q7-house-tabs{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 7px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.q7-house-tabs::-webkit-scrollbar,.q7-house-choices::-webkit-scrollbar{display:none}
+.q7-house-tabs button{flex:0 0 auto;border:1px solid rgba(48,78,70,.11);border-radius:999px;padding:9px 13px;background:#f2f6f4;color:#60706a;font:800 11px/1 system-ui;white-space:nowrap}.q7-house-tabs button.active{background:#d9f4e7;color:#17684f;border-color:#a9dfc8}
+.q7-house-choice-wrap{min-height:92px;overflow:hidden}.q7-house-choice-title{font:900 12px/1.2 system-ui;color:#273630;margin:0 0 7px 3px}
+.q7-house-choices{display:flex;gap:9px;overflow-x:auto;padding:2px 3px 9px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.q7-house-choice{flex:0 0 88px;min-height:76px;border:1px solid rgba(45,75,67,.1);border-radius:17px;background:#f7faf8;padding:8px;display:grid;grid-template-rows:42px auto;gap:5px;place-items:center;color:#304039;scroll-snap-align:start;position:relative}
+.q7-house-choice.active{background:#e2f6eb;border-color:#80c9a8;box-shadow:0 0 0 2px rgba(70,169,126,.12)}.q7-house-choice.active:after{content:"✓";position:absolute;right:6px;top:6px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#2b8a67;color:#fff;font:900 10px/1 system-ui}
+.q7-house-choice b{font:800 10px/1.15 system-ui;text-align:center}
+.q7-house-choice .q6-house-thumb{transform:scale(.88)}
+.q7-house-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:9px}
+.q7-world-menu{display:grid!important;gap:8px!important}.q7-world-menu button{width:100%;min-height:64px}
+.q7-world-shell .mw-character{z-index:45!important}
+@media(max-width:520px){.q7-world-shell .mw-viewport{height:70vh!important;min-height:545px!important}.q7-house-editor{grid-template-rows:auto minmax(205px,34vh) auto auto}.q7-house-preview-sticky{min-height:205px}}
+@media(prefers-reduced-motion:reduce){.q7-water-glint{animation:none!important}}
