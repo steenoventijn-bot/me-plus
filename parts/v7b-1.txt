@@ -1,0 +1,80 @@
+(()=>{'use strict';
+const CORE='https://npolnflektojripucyvq.supabase.co/functions/v1/me-plus-api';
+const V7='https://npolnflektojripucyvq.supabase.co/functions/v1/me-plus-v7-api';
+const STATE_KEY='meplus-v5', DEVICE_KEY='meplus-device-token';
+const CATEGORIES=['Ruimte','Psychologie','Wetenschap','Geschiedenis','Technologie','Economie','Natuurkennis','Menselijk lichaam','Praktische kennis','Natuur','Cultuur'];
+const RANKS=[
+  ['Starter',0,'seed'],['Beginner',10,'sprout'],['Groeier',20,'trend'],['Professional',30,'briefcase'],['Baas',40,'crown'],['Elite',50,'diamond'],['Expert',60,'compass'],['Meester',70,'medal'],['Legende',80,'flame'],['Topper',90,'trophy'],['Me+ Legende',100,'spark']
+];
+let view='today', socialTab='people', socialPeriod='week', knowledgeFilter='Alles';
+let server={profile:null,articles:[],stats:null,extras:{streak:0,saved:0,attention:0},saved:new Set(),friends:[],incomingRequests:[],outgoingRequests:[],feed:[],leaderboard:[],conversations:[],push:{enabled:false,attention:0}};
+let state=loadState();
+let readSession=null, readTimer=null;
+
+function loadState(){let base={profileName:'',events:[],done:{},goals:[],checkins:{},knowledgeSeen:false,focusId:null};try{const v=JSON.parse(localStorage.getItem(STATE_KEY)||'null');if(v)return {...base,...v,events:Array.isArray(v.events)?v.events:[]}}catch{}return base}
+function save(){localStorage.setItem(STATE_KEY,JSON.stringify(state))}
+function token(){let t=localStorage.getItem(DEVICE_KEY);if(!t){const a=new Uint8Array(32);crypto.getRandomValues(a);t=[...a].map(x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem(DEVICE_KEY,t)}return t}
+function call(base,op,data={}){return fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op,token:token(),...data})}).then(async r=>{let j={};try{j=await r.json()}catch{}if(!r.ok){const e=new Error(j.error||'Er ging iets mis.');e.data=j;throw e}return j})}
+const api=(op,data)=>call(CORE,op,data), api7=(op,data)=>call(V7,op,data);
+function el(id){return document.getElementById(id)}
+function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function toast(t){const x=el('toast');if(!x)return;x.textContent=t;x.classList.add('show');clearTimeout(toast._);toast._=setTimeout(()=>x.classList.remove('show'),2300)}
+function uid(){return crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function localISO(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function fmtDate(d=new Date()){return new Intl.DateTimeFormat('nl-NL',{weekday:'long',day:'numeric',month:'long'}).format(d)}
+function greeting(){const h=new Date().getHours();return h<5?'Goedenacht':h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond'}
+function initials(n=''){return n.trim().split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()||'').join('')||'+'}
+function tz(){return Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Amsterdam'}
+function standalone(){return matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
+function words(a){return [a?.intro,a?.body,a?.extra_fact,a?.why_it_matters].filter(Boolean).join(' ').trim().split(/\s+/).filter(Boolean).length}
+function readLabel(a){const w=words(a);const min=w/215;return min<.75?'< 1 min':`±${Math.max(1,Math.round(min))} min`}
+function progress(p){if(!p)return 0;if(!p.next)return 100;const low=(p.level-1)*10;return Math.max(0,Math.min(100,((p.points-low)/10)*100))}
+function rankFor(points){return RANKS[Math.min(RANKS.length-1,Math.floor(Math.max(0,points)/10))]}
+function nextRank(points){return RANKS.find(r=>r[1]>points)||null}
+function svg(name){const p={
+ today:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V21h14V10.5"/><path d="M9 21v-6h6v6"/>',
+ knowledge:'<path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22z"/><path d="M20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22z"/>',
+ social:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+ profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+ camera:'<path d="M14.5 4 16 6h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l1.5-2z"/><circle cx="12" cy="13" r="4"/>',
+ bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',
+ settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 3.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H2v-4h.1A1.7 1.7 0 0 0 3.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 8 3.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V2h4v.1A1.7 1.7 0 0 0 15 3.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 8c.14.37.36.7.66.96.3.26.67.4 1.06.4H22v4h-.88c-.39 0-.76.14-1.06.4-.3.26-.52.59-.66.96z"/>',
+ ranks:'<path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a4 4 0 0 0 4 4"/><path d="M17 6h3v1a4 4 0 0 1-4 4"/>',
+ bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>',
+ shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>',
+ flame:'<path d="M12 22c4 0 7-2.8 7-6.5 0-3-1.8-5.7-5.1-8.8.1 2.1-.6 3.6-2 4.7.1-3.3-1.6-6.2-5-8.4.4 4-2.9 6.7-2.9 11.4C4 18.8 7.5 22 12 22z"/>',
+ chevron:'<path d="m9 18 6-6-6-6"/>',
+ close:'<path d="m6 6 12 12M18 6 6 18"/>',
+ spark:'<path d="m12 2 1.5 5.5L19 9l-5.5 1.5L12 16l-1.5-5.5L5 9l5.5-1.5z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
+ seed:'<path d="M12 21v-8"/><path d="M12 13C7 13 5 9 5 5c4 0 7 2 7 8z"/><path d="M12 13c5 0 7-4 7-8-4 0-7 2-7 8z"/>',
+ sprout:'<path d="M12 22v-9"/><path d="M12 15c-4 0-6-2-6-5 4 0 6 2 6 5z"/><path d="M12 12c4 0 6-2 6-5-4 0-6 2-6 5z"/>',
+ trend:'<path d="m3 17 6-6 4 4 8-9"/><path d="M15 6h6v6"/>',
+ briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/>',
+ crown:'<path d="m3 7 4 4 5-7 5 7 4-4-2 11H5z"/>',
+ diamond:'<path d="M6 3h12l4 6-10 12L2 9z"/><path d="m2 9 10 3 10-3M8 3l4 9 4-9"/>',
+ compass:'<circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5z"/>',
+ medal:'<circle cx="12" cy="15" r="5"/><path d="M8 3h8l-2 7h-4z"/>',
+ trophy:'<path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0zM7 6H4v1a4 4 0 0 0 4 4M17 6h3v1a4 4 0 0 1-4 4"/>'
+ }[name]||'<circle cx="12" cy="12" r="8"/>';return `<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`}
+function nav(){const attention=Math.max(server.extras.attention||0,server.stats?.requestCount||0)+(server.stats?.unreadMessages||0);return `<nav class="nav">${[['today','today','Vandaag'],['knowledge','knowledge','Kennis'],['social','social','Vrienden'],['profile','profile','Profiel']].map(([k,i,l])=>`<button data-nav="${k}" class="${view===k?'active':''}">${svg(i)}${k==='social'&&attention?`<span class="nav-badge">${attention>9?'9+':attention}</span>`:''}${l}</button>`).join('')}</nav>`}
+function shell(body){return `<main class="screen">${body}</main>${nav()}`}
+
+async function boot(){registerSW();if(!state.profileName){renderOnboarding();return}try{const r=await api('register',{name:state.profileName});server.profile=r.profile;await refreshBase();await onAppOpen();syncAllReminders()}catch(e){console.warn(e)}render()}
+async function refreshBase(){const [k,s,e,saved,push]=await Promise.allSettled([api('knowledge',{date:localISO()}),api('stats',{localDate:localISO()}),api7('extras',{localDate:localISO()}),api7('saved_list'),api7('push_status')]);if(k.status==='fulfilled')server.articles=k.value.articles||[];if(s.status==='fulfilled')server.stats=s.value.stats||s.value;if(e.status==='fulfilled')server.extras=e.value;if(saved.status==='fulfilled')server.saved=new Set(saved.value.savedIds||[]);if(push.status==='fulfilled')server.push=push.value}
+async function onAppOpen(){try{const r=await api7('app_open');server.extras.attention=r.attention||0;await setBadge(r.attention||0)}catch{try{await setBadge(0)}catch{}}}
+async function setBadge(n){if(n>0&&'setAppBadge'in navigator)try{await navigator.setAppBadge(n)}catch{}else if(!n&&'clearAppBadge'in navigator)try{await navigator.clearAppBadge()}catch{}}
+function render(){const app=el('app');if(!app)return;app.innerHTML=view==='today'?todayView():view==='knowledge'?knowledgeView():view==='social'?socialView():profileView();bind()}
+function renderOnboarding(){el('app').innerHTML=`<section class="onboard"><div class="on-inner"><div class="brand">me<span>+</span></div><div class="eyebrow" style="color:rgba(255,255,255,.55)">Jouw persoonlijke plek</div><h1>Begin klein.<br>Word elke dag beter.</h1><p>Kies één vaste profielnaam. Vrienden kunnen je later daarop vinden.</p><div class="field"><input id="on-name" maxlength="40" placeholder="Je naam" autocomplete="name"></div><button id="on-start" class="button full">Begin met me+</button></div></section>`;el('on-start').onclick=async()=>{const name=el('on-name').value.trim();if(!name)return toast('Vul eerst je naam in.');el('on-start').disabled=true;try{const r=await api('register',{name});state.profileName=name;save();server.profile=r.profile;await refreshBase();render()}catch(e){toast(e.message);el('on-start').disabled=false}}}
+
+function eventOccurs(e,date){if(e.date===date)return true;if(!e.repeat||e.repeat==='none')return false;const a=new Date(e.date+'T12:00'),b=new Date(date+'T12:00');if(b<a)return false;if(e.repeat==='daily')return true;if(e.repeat==='weekly')return a.getDay()===b.getDay();if(e.repeat==='monthly')return a.getDate()===b.getDate();return false}
+function eventsFor(date){return state.events.filter(e=>eventOccurs(e,date)).sort((a,b)=>(a.start||'99:99').localeCompare(b.start||'99:99'))}
+function doneKey(e,date){return `${e.id}@${date}`}
+function todayView(){const p=server.profile,a=server.articles[0],date=localISO(),items=eventsFor(date),done=items.filter(e=>state.done[doneKey(e,date)]).length,next=nextRank(p?.points||0);return shell(`<div class="top"><div class="dayline"><div class="eyebrow">${esc(fmtDate())}</div><h1>${greeting()}, ${esc(p?.name||state.profileName)}.</h1><p>${items.length?`${done} van ${items.length} momenten afgerond.`:'Je dag is nog open. Kies één stap die echt telt.'}</p></div><div class="score-chip"><b>${p?.points||0} pt</b><span>${esc(p?.rank||'Starter')}</span></div></div>${a?`<article class="hero" data-article="${a.id}"><div class="meta">Weetje van vandaag · ${esc(a.category)}</div><h2>${esc(a.title)}</h2><p>${esc(a.intro)}</p><div class="hero-foot"><button class="hero-btn" data-article="${a.id}">Lees verder</button><span class="read-time">${readLabel(a)} · +1 bij echt lezen</span></div></article>`:''}<section class="section"><div class="section-head"><div><h2>Vandaag</h2><p>Afspraken en verbeteractiviteiten</p></div><button id="add-event" class="link">+ toevoegen</button></div>${items.length?`<div class="list">${items.map(e=>eventRow(e,date)).join('')}</div>`:'<div class="empty">Nog niets gepland. Voeg bijvoorbeeld sporten, lezen of een afspraak toe.</div>'}</section><section class="section"><div class="section-head"><div><h2>Jouw ritme</h2><p>Alleen verdiende punten tellen mee.</p></div></div><div class="mini-cards"><div class="mini"><strong>${server.stats?.today?.total||0}</strong><span>punten vandaag</span></div><div class="mini"><strong>${server.extras.streak||0}</strong><span>dagen reeks</span></div><div class="mini"><strong>${next?next[1]-(p?.points||0):'✓'}</strong><span>${next?'tot '+next[0]:'hoogste rang'}</span></div></div></section>`)}
+function eventRow(e,date){const done=!!state.done[doneKey(e,date)],growth=e.type==='growth';return `<div class="row">${growth?`<button class="proof-needed ${done?'done':''}" data-growth="${esc(e.id)}" data-date="${date}" aria-label="Bewijs toevoegen">${done?'✓':svg('camera')}</button>`:`<button class="check ${done?'done':''}" data-check="${esc(e.id)}" data-date="${date}">✓</button>`}<div class="row-main" data-edit-event="${esc(e.id)}"><div class="row-title">${esc(e.title||'Activiteit')}</div><div class="row-meta">${e.start?esc(e.start)+' · ':''}${growth?'verbeteractiviteit':'afspraak'}${e.repeat&&e.repeat!=='none'?` · ${repeatLabel(e.repeat)}`:''}${e.reminder&&e.reminder!=='none'?` · melding ${reminderLabel(e.reminder)}`:''}</div></div>${growth?'<span class="points">+1 met bewijs</span>':''}</div>`}
+function repeatLabel(v){return ({daily:'dagelijks',weekly:'wekelijks',monthly:'maandelijks'})[v]||''}
+function reminderLabel(v){return ({at:'op tijd','5':'5m vooraf','10':'10m vooraf','30':'30m vooraf','60':'1u vooraf'})[v]||''}
+
+function knowledgeView(){const p=server.profile,interests=p?.interests||[];if(!state.knowledgeSeen||!interests.length)return knowledgeChooser();let arts=server.articles;if(knowledgeFilter==='Bewaard')arts=arts.filter(a=>server.saved.has(a.id));else if(knowledgeFilter!=='Alles')arts=arts.filter(a=>a.category===knowledgeFilter);const filters=['Alles','Bewaard',...interests,...CATEGORIES.filter(c=>!interests.includes(c))];return shell(`<div class="top"><div><div class="eyebrow">Voor jou samengesteld</div><h1 class="title">Kennis</h1><p class="subtitle">Korte weetjes en langere verhalen. Elk artikel heeft zijn eigen leestijd.</p></div><button id="surprise" class="icon-btn" aria-label="Verras me">${svg('spark')}</button></div><div class="filters">${filters.map(f=>`<button class="filter ${knowledgeFilter===f?'active':''}" data-filter="${esc(f)}">${esc(f)}</button>`).join('')}</div><div class="knowledge-list">${arts.length?arts.map(knowledgeCard).join(''):'<div class="empty">Hier staat nog niets. Bewaar een artikel of kies een andere categorie.</div>'}</div>`)}
+function knowledgeChooser(){return shell(`<div class="top"><div><div class="eyebrow">Kies je interesses</div><h1 class="title">Waar wil je meer over weten?</h1><p class="subtitle">Dit kun je later altijd aanpassen via Algemene instellingen.</p></div></div><div class="genre-grid" id="chooser">${CATEGORIES.map(c=>`<button class="genre ${(server.profile?.interests||[]).includes(c)?'selected':''}" data-genre="${esc(c)}">${svg(categoryIcon(c))}<b>${esc(c)}</b></button>`).join('')}</div><section class="section"><button id="save-interests" class="button primary full">Mijn kennis samenstellen</button></section>`)}
+function categoryIcon(c){return ({Ruimte:'spark',Psychologie:'profile',Wetenschap:'compass',Geschiedenis:'medal',Technologie:'settings',Economie:'trend','Natuurkennis':'seed','Menselijk lichaam':'flame','Praktische kennis':'briefcase',Natuur:'sprout',Cultuur:'diamond'})[c]||'spark'}
+function knowledgeCard(a){return `<article class="knowledge"><div data-article="${a.id}"><div class="cat">${esc(a.category)}</div><h3>${esc(a.title)}</h3><p>${esc(a.intro)}</p><div class="knowledge-meta"><span>${readLabel(a)}</span><span>${words(a)>300?'lang verhaal':words(a)>180?'verdieping':'kort weetje'}</span></div></div><button class="save-btn ${server.saved.has(a.id)?'saved':''}" data-save="${a.id}" aria-label="Bewaren">${svg('bookmark')}</button></article>`}
