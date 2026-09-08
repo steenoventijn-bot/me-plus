@@ -1,0 +1,31 @@
+/* me+ v13 — monotonic knowledge timer quality */
+function v9ShownActive(){
+ if(!readSession)return 0;
+ const base=Math.max(0,Number(readSession.v9Base??readSession.active??0));
+ if(document.hidden||readSession.v9At==null)return base;
+ return base+Math.max(0,(performance.now()-readSession.v9At)/1000);
+}
+function paintReadTimer(){
+ const t=el('read-timer');if(!t||!readSession)return;
+ const active=Math.max(0,v9ShownActive()),min=Math.max(0,Number(readSession.min||0));
+ const remain=Math.max(0,Math.ceil(min-active));
+ t.classList.add('v13-reader');
+ t.innerHTML=`<span><strong>${fmtSeconds(remain)}</strong>${remain?'actief lezen':'controleren…'}</span>`;
+ t.dataset.elapsed=String(Math.floor(active));
+ if(!remain&&!readSession.syncing)syncReadProgressV9();
+}
+async function syncReadProgressV9(){
+ if(!readSession?.sessionId||readSession.syncing||readSession.complete||document.hidden)return;
+ const session=readSession,localBefore=v9ShownActive();session.syncing=true;
+ try{
+   const r=await api7('read_tick_v7',{sessionId:session.sessionId});
+   if(readSession!==session)return;
+   const serverActive=Math.max(0,Number(r.activeSeconds||0));
+   session.active=Math.max(Number(session.active||0),serverActive,localBefore);
+   session.min=Math.max(0,Number(r.minSeconds||session.min||0));
+   session.v9Base=Math.max(localBefore,serverActive);
+   session.v9At=performance.now();
+   paintReadTimer();
+   if(r.done)await finishRead();
+ }catch(e){console.warn('reader sync',e)}finally{if(readSession===session)session.syncing=false}
+}
