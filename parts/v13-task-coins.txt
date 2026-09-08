@@ -1,0 +1,3 @@
+/* me+ v13 — 1 completed task = 10 World Coins, once per occurrence */
+const v13TaskBindBase=bind;
+bind=function(){v13TaskBindBase();document.querySelectorAll('[data-check]').forEach(b=>b.onclick=async()=>{const e=state.events.find(x=>x.id===b.dataset.check);if(!e)return;const date=b.dataset.date,k=doneKey(e,date),was=!!state.done[k];state.done[k]=!was;save();render();await syncReminderForEvent(e);if(!was){miniDoneV8();if(e.type==='task'){try{const r=await apiWorld('task_complete',{eventId:e.id,date});if(r?.added){if(mw.data?.isOwner&&mw.data.world)mw.data.world.coins=Number(r.coins||mw.data.world.coins||0);toast('+10 World Coins 🪙')}}catch(err){console.warn('task coins',err)}}}})};
