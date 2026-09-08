@@ -1,0 +1,24 @@
+iv>');const today=s.today||{total:0,activity:0,knowledge:0};return shell(`<div class="profile-top">${avatar(p,'lg')}<div class="profile-name"><h1>${esc(p.name)}</h1><span>@${esc(p.handle)}</span></div></div><section class="profile-score"><div class="rank-line"><div><span class="eyebrow">${esc(p.rank)}</span><h2>Level ${p.level}</h2></div><div class="big-points"><b>${p.points}</b><span>punten</span></div></div><div class="progress"><span style="width:${rankProgress(p)}%"></span></div><div class="progress-copy"><span>${p.next?`${p.points} / ${p.next}`:`${p.points} punten`}</span><span>${p.next?`Nog ${p.remaining} tot ${RANKS[Math.min(10,p.level)]?.name||'volgende rang'}`:'Hoogste rang bereikt'}</span></div></section><section class="profile-stats"><div><b>${s.friendCount||0}</b><span>vrienden</span></div><div><b>${x.streak||0}</b><span>dagreeks</span></div><div><b>${x.saved||0}</b><span>bewaard</span></div></section><section class="section"><div class="section-head"><div><div class="eyebrow">Vandaag verdiend</div><h2>+${today.total||0} punten</h2></div></div><div class="point-detail"><span>${icon('check',17)} Activiteiten <b>+${today.activity||0}</b></span><span>${icon('book',17)} Kennis <b>+${today.knowledge||0}</b></span></div></section><section class="settings-link" id="open-settings"><div class="settings-icon">${icon('settings',20)}</div><div><b>Algemene instellingen</b><span>Meldingen, interesses en privacy</span></div>${icon('chevron',19)}</section><section class="settings-link second" id="open-ranks"><div class="settings-icon">${icon('trophy',20)}</div><div><b>Rangen & levels</b><span>Bekijk alle rangen en puntengrenzen</span></div>${icon('chevron',19)}</section><div class="fixed-name-note">Je profielnaam is bij onboarding vastgelegd en kan niet worden aangepast.</div>`)}
+
+function render(){let body=view==='today'?todayView():view==='knowledge'?knowledgeView():view==='social'?socialView():profileView();document.getElementById('app').innerHTML=body;bind()}
+function bind(){
+ document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=async()=>{view=b.dataset.nav;if(view==='social')await loadSocial();if(view==='today')await loadKnowledge();render()});
+ document.querySelectorAll('[data-article]').forEach(b=>{b.onclick=e=>{e.stopPropagation();openArticle(b.dataset.article)};b.onkeydown=e=>{if(e.key==='Enter')openArticle(b.dataset.article)}});
+ document.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>handleTask(b.dataset.task,b.dataset.date));
+ if(el('add-task'))el('add-task').onclick=openTaskSheet;
+ document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=async()=>{knowledgeFilter=b.dataset.filter;await loadKnowledge(knowledgeFilter==='Alles'||knowledgeFilter==='Bewaard'?'':knowledgeFilter);view='knowledge';render()});
+ document.querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{b.classList.toggle('selected');b.querySelector('small').textContent=b.classList.contains('selected')?'Geselecteerd':'Tik om te kiezen'});
+ if(el('save-genres'))el('save-genres').onclick=saveGenresFromChooser;
+ document.querySelectorAll('[data-social]').forEach(b=>b.onclick=async()=>{socialTab=b.dataset.social;await loadSocial();render()});
+ document.querySelectorAll('[data-period]').forEach(b=>b.onclick=async()=>{socialPeriod=b.dataset.period;await loadLeaderboard();render()});
+ if(el('friend-search-btn'))el('friend-search-btn').onclick=searchFriends;
+ if(el('friend-search'))el('friend-search').onkeydown=e=>{if(e.key==='Enter')searchFriends()};
+ bindSocialActions();
+ document.querySelectorAll('[data-chat-user]').forEach(b=>b.onclick=()=>openChat(b.dataset.chatUser,b.dataset.chatName));
+ if(el('open-settings'))el('open-settings').onclick=openSettings;
+ if(el('open-ranks'))el('open-ranks').onclick=openRanks;
+}
+function bindSocialActions(){
+ document.querySelectorAll('[data-request-action]').forEach(b=>b.onclick=()=>respondRequest(b.dataset.userId,b.dataset.requestAction));
+ document.querySelectorAll('[data-cancel-request]').forEach(b=>b.onclick=()=>cancelRequest(b.dataset.cancelRequest));
+ document.querySelectorAll('[data-user-action]').forEach(b=>b.onclick=async()=>{const action=b.dataset.userAction,id=b.dataset.userId,name=b.dataset.userName;if(action==='request')await sendRequest(id);else if(action==='cancel')await cancelRequest(id);else if(action==='accept')await respondRequest(id,'accept');else if(action==='chat')openC
