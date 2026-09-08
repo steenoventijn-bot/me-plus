@@ -1,11 +1,15 @@
 {
-  "name":"me+",
-  "short_name":"me+",
-  "description":"Plannen, groeien, leren en elkaar motiveren.",
-  "start_url":"/",
-  "scope":"/",
-  "display":"standalone",
-  "background_color":"#f7f6f1",
-  "theme_color":"#f7f6f1",
-  "icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "id": "/",
+  "name": "me+ — iedere dag een stap beter",
+  "short_name": "me+",
+  "description": "Planning, kennis, vrienden en echte dagelijkse voortgang.",
+  "lang": "nl-NL",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f6f1",
+  "theme_color": "#f7f6f1",
+  "icons": [
+    {"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
 }
