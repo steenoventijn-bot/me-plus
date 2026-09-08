@@ -1,2 +1,20 @@
 /* me+ v13q9b — restore the reference scene instead of flat q8 SVG */
 if(typeof q8EnvironmentSvg==='function')q8EnvironmentSvg=function(){return''};
+(function(){
+  const id='q9-reference-scene-fix';
+  document.getElementById(id)?.remove();
+  const s=document.createElement('style');
+  s.id=id;
+  s.textContent=`
+    .q7-world-shell .q7-environment.q8-environment{
+      background-image:var(--q7-scene)!important;
+      background-position:center center!important;
+      background-size:100% 100%!important;
+      background-repeat:no-repeat!important;
+      opacity:1!important;
+      visibility:visible!important;
+      display:block!important;
+    }
+  `;
+  document.head.appendChild(s);
+})();
