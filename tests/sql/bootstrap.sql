@@ -1,4 +1,4 @@
-create role anon;create role authenticated;create role service_role;
+create role anon;create role authenticated;create role service_role bypassrls;
 create table public.me_profiles(id uuid primary key default gen_random_uuid(),display_name text,points integer not null default 0,last_seen_at timestamptz);
 create table public.me_worlds(user_id uuid primary key references me_profiles(id),world_name text,coins integer default 0,house jsonb default '{}',updated_at timestamptz default now());
 create table public.me_world_catalog(item_key text primary key,category text,name text,price integer default 0,rarity text default 'common',max_owned integer,metadata jsonb default '{}',default_unlocked boolean default false);

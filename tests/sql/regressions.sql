@@ -2,9 +2,17 @@
 begin;
 set local role service_role;
 do $$
-declare own uuid:=gen_random_uuid();other uuid:=gen_random_uuid();placed_id uuid;result jsonb;stock integer;article uuid;session uuid;session2 uuid;question smallint;first_points integer;
+declare own uuid:=gen_random_uuid();other uuid:=gen_random_uuid();placed_id uuid;result jsonb;stock integer;article uuid;session uuid;session2 uuid;question smallint;first_points integer; crowded uuid:=gen_random_uuid(); feature record;
 begin
  insert into public.me_profiles(id,display_name) values(own,'Test account'),(other,'Other test account');
+ insert into public.me_profiles(id,display_name) values(crowded,'Existing layout');
+ perform public.me_world_ensure(crowded);
+ insert into public.me_world_items(user_id,item_key,grid_x,grid_y,pos_x,pos_y) values(crowded,'bench_wood',10,7,9.5,6.6) returning id into placed_id;
+ perform public.me_world_add_features(crowded);
+ if (select pos_x<>9.5 or pos_y<>6.6 from public.me_world_items where id=placed_id) then raise exception 'Existing object moved during feature migration';end if;
+ for feature in select * from public.me_world_items where user_id=crowded loop
+  perform public.me_world_validate_position(crowded,feature.item_key,feature.pos_x::float8,feature.pos_y::float8,feature.rotation,feature.id);
+ end loop;
  perform public.me_world_seed_layout(own);perform public.me_world_seed_layout(other);
  if (select count(*) from public.me_world_items where user_id=own and item_key in('house_main','pond_garden','dock_wood'))<>3 then raise exception 'Feature seed failed';end if;
  delete from public.me_world_items where user_id=own;
@@ -28,7 +36,7 @@ begin
  if (result->>'rotation')::int<>270 then raise exception 'Move not persisted';end if;
 
  select id into article from public.me_knowledge_articles where slug='slaap-geheugen';
- select correct_index into question from public.me_knowledge_questions where article_id=article;
+ select correct_index into strict question from public.me_knowledge_questions where article_id=article;
  insert into public.me_read_sessions(user_id,article_id,min_seconds,active_seconds) values(own,article,60,60) returning id into session;
  result:=public.me_answer_knowledge(own,session,question,current_date);
  if not (result->>'correct')::boolean or not (result->>'newPoint')::boolean or (result->>'points')::int<>1 then raise exception 'Correct answer was not rewarded once';end if;
@@ -39,7 +47,7 @@ begin
  if (result->>'newPoint')::boolean or (result->>'points')::int<>1 then raise exception 'Another session earned twice';end if;
 
  select id into article from public.me_knowledge_articles where slug='gewoonte-anker';
- select correct_index into question from public.me_knowledge_questions where article_id=article;
+ select correct_index into strict question from public.me_knowledge_questions where article_id=article;
  insert into public.me_read_sessions(user_id,article_id,min_seconds,active_seconds) values(own,article,60,59) returning id into session;
  begin
   perform public.me_answer_knowledge(own,session,question,current_date);

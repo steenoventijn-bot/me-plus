@@ -109,11 +109,39 @@ begin
  return to_jsonb(result);
 end $$;
 
--- Existing worlds receive only the three formerly baked-in features, once.
--- Deliberately empty inventories/layouts are never refilled by opening a world.
-insert into public.me_world_items(user_id,item_key,grid_x,grid_y,pos_x,pos_y)
-select w.user_id,f.key,round(f.x),round(f.y),f.x,f.y from public.me_worlds w cross join(values('house_main',9.5,6.6),('pond_garden',15.2,10.7),('dock_wood',14.3,15.9)) f(key,x,y)
-where not exists(select 1 from public.me_world_items i where i.user_id=w.user_id and i.item_key=f.key);
+-- Add formerly baked-in features without moving or overlapping a user's objects.
+create or replace function public.me_world_add_features(p_user_id uuid)
+returns void language plpgsql set search_path='' as $$
+declare f record; candidate record; placed boolean;
+begin
+ perform 1 from public.me_worlds where user_id=p_user_id for update;
+ for f in select * from(values('house_main',9.5,6.6),('pond_garden',15.2,10.7),('dock_wood',14.3,15.9))v(key,x,y) loop
+  if exists(select 1 from public.me_world_items where user_id=p_user_id and item_key=f.key) then continue;end if;
+  placed:=false;
+  for candidate in
+   select x,y from (
+    select f.x::float8 x,f.y::float8 y,-1::float8 distance
+    union all
+    select gx/2.0,gy/2.0,power(gx/2.0-f.x,2)+power(gy/2.0-f.y,2)
+    from generate_series(1,37)gx cross join generate_series(1,37)gy
+   )positions order by distance,x,y
+  loop
+   begin
+    perform public.me_world_validate_position(p_user_id,f.key,candidate.x,candidate.y,0);
+   exception when sqlstate 'P0001' then continue;
+   end;
+   insert into public.me_world_items(user_id,item_key,grid_x,grid_y,pos_x,pos_y)
+   values(p_user_id,f.key,round(candidate.x),round(candidate.y),candidate.x,candidate.y);
+   placed:=true;exit;
+  end loop;
+  if not placed then raise exception 'Geen vrije plek voor % in wereld %. Bestaande objecten zijn behouden.',f.key,p_user_id;end if;
+ end loop;
+end $$;
+revoke all on function public.me_world_add_features(uuid) from public,anon,authenticated;
+grant execute on function public.me_world_add_features(uuid) to service_role;
+do $$ declare w record;begin
+ for w in select user_id from public.me_worlds loop perform public.me_world_add_features(w.user_id);end loop;
+end $$;
 
 create or replace function public.me_world_seed_layout(p_user_id uuid)
 returns void language plpgsql security definer set search_path='' as $$
@@ -130,9 +158,7 @@ begin
   update public.me_world_inventory i set quantity=greatest(0,i.quantity-s.used),updated_at=now()
    from(select item_key,count(*)::int used from public.me_world_items where user_id=p_user_id group by item_key)s where i.user_id=p_user_id and i.item_key=s.item_key;
  end if;
- insert into public.me_world_items(user_id,item_key,grid_x,grid_y,pos_x,pos_y)
- select p_user_id,f.key,round(f.x),round(f.y),f.x,f.y from(values('house_main',9.5,6.6),('pond_garden',15.2,10.7),('dock_wood',14.3,15.9))f(key,x,y)
- where not exists(select 1 from public.me_world_items i where i.user_id=p_user_id and i.item_key=f.key);
+ perform public.me_world_add_features(p_user_id);
  update public.me_worlds set layout_initialized=true where user_id=p_user_id;
 end $$;
 revoke all on function public.me_world_shape(text,integer),public.me_world_land_distance(double precision,double precision),public.me_world_validate_position(uuid,text,double precision,double precision,integer,uuid),public.me_world_save_position(uuid,uuid,text,double precision,double precision,integer),public.me_world_seed_layout(uuid) from public,anon,authenticated;
