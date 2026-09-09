@@ -38,3 +38,17 @@ html[data-accent] .button.primary,.quick-add-v8{background:linear-gradient(135de
 @media(max-width:430px){.v10-social-hero{padding:20px}.v10-social-hero h1{font-size:32px}.v10-friend-grid{grid-template-columns:1fr}.v10-me-card{grid-template-columns:78px 1fr auto}.v10-me-card .v10-avatar.xl{width:78px;height:78px}.v10-progress-cards{grid-template-columns:1fr 1fr 1fr}.v10-score-player>strong{font-size:34px}}
 @media(max-width:360px){.v10-option-grid.metric{grid-template-columns:1fr}.v10-profile-actions{grid-template-columns:1fr}.v10-theme-dots{grid-template-columns:repeat(3,1fr)}}
 @media(prefers-reduced-motion:reduce){.v10-fullscreen,.v10-countdown #v10-count-num{animation:none}.v10-option-grid button,.v10-dual-progress span{transition:none}}
+
+/* Stable mobile composer: 16px prevents iOS focus zoom; pinch zoom remains available. */
+.v10-chat-page{bottom:auto;height:100dvh;box-sizing:border-box;animation:none;padding-bottom:0}
+.v10-chat-stream{min-height:0;overscroll-behavior:contain;overflow-anchor:none}
+.v10-chat-compose{grid-template-columns:36px 36px minmax(0,1fr) 36px 40px;gap:4px;padding:8px 8px max(8px,env(safe-area-inset-bottom))}
+.v10-chat-compose button{width:36px;min-height:44px;touch-action:manipulation}
+.v10-chat-compose #v10-chat-send{width:40px}
+.v10-chat-compose #v10-chat-text{box-sizing:border-box;display:block;min-width:0;width:100%;min-height:44px;max-height:120px;resize:none;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);padding:10px 9px;font-family:inherit;font-size:16px;line-height:22px}
+.v10-chat-compose #v10-chat-text:focus{outline:2px solid var(--v10-accent);outline-offset:1px}
+.v10-chat-head>div>b{font-size:15px}.v10-chat-head>div>span{font-size:12px}
+.v10-replying{font-size:13px;align-items:center}.v10-replying button{min-width:44px;min-height:36px}
+.v142-battle-help{padding:16px;margin:14px 0;border:1px solid var(--line);border-radius:18px;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.55;text-align:left}
+.v142-battle-help h2{font-size:17px;margin:0 0 8px}.v142-battle-help p{margin:8px 0}.v142-battle-help ol{padding-left:22px;margin:12px 0}.v142-battle-help li{padding-left:3px;margin:9px 0}.v142-battle-help summary{cursor:pointer;font-weight:700;padding:8px 0}.v142-start-note{font-size:14px;line-height:1.5;color:var(--muted)}
+.v10-custom-fields label{display:grid;gap:6px;font-size:13px}.v10-custom-fields input{font-size:16px}
