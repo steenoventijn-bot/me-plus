@@ -1,0 +1,3 @@
+import fs from 'node:fs';const questions=JSON.parse(fs.readFileSync('supabase/functions/me-plus-knowledge-v14-api/questions.json'));const keys=['tree_oak','flowers_pink','bush_round','bench_wood','lamp_glow'];const quote=s=>"'"+s.replaceAll("'","''")+"'";
+console.log(`insert into public.me_world_catalog(item_key,category,name,default_unlocked) values ${keys.map(k=>`(${quote(k)},'nature',${quote(k)},true)`).join(',')};`);
+for(const q of questions)console.log(`insert into public.me_knowledge_articles(slug,title,intro,body,extra_fact,why_it_matters) values(${quote(q.slug)},${quote(q.slug)},'Een begin',repeat('woord ',200),'Extra feit','Waarom het telt');`);

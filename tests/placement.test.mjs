@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {placementResult,footprint,validLand,landDistance,FEATURE_DEFAULTS} from '../world/placement.js';
+const item=(id,key,x,y,rotation=0)=>({id,item_key:key,pos_x:x,pos_y:y,rotation});
+test('formerly inaccessible foreground is suitable for placement',()=>{for(const[x,y]of[[9.5,16],[5,14],[14,14]])assert.equal(placementResult({key:'flowers_pink',x,y},[]).valid,true)});
+test('footprint rotation permits the real narrow gap',()=>{const obstacle=item('lamp','lamp_glow',10.6,10);assert.equal(placementResult({key:'bench_wood',x:10,y:10,rotation:0},[obstacle]).valid,false);assert.equal(placementResult({key:'bench_wood',x:10,y:10,rotation:90},[obstacle]).valid,true)});
+test('moving an object excludes only itself',()=>{const items=[item('a','bench_wood',10,10),item('b','lamp_glow',12,12)];assert.equal(placementResult({key:'bench_wood',id:'a',x:10,y:10},items).valid,true);assert.equal(placementResult({key:'bench_wood',id:'a',x:12,y:12},items).valid,false)});
+test('all visible permanent features are normal movable items',()=>{const items=FEATURE_DEFAULTS.map((it,i)=>({...it,id:String(i)}));for(const it of items)assert.equal(placementResult({key:it.item_key,id:it.id,x:it.pos_x,y:it.pos_y},items).valid,true,it.item_key);assert.equal(placementResult({key:'house_main',id:'0',x:7,y:8},items).valid,true)});
+test('reject water, invalid rotations, non-finite positions and straddling coast',()=>{for(const q of [{x:0,y:0},{x:NaN,y:10},{x:Infinity,y:10},{x:10,y:10,rotation:45},{x:19,y:19}])assert.equal(placementResult({key:'bench_wood',...q}).valid,false);assert.equal(validLand(1.4,9.5,footprint('house_main')),false)});
+test('small footprints can sit near trees without blocking empty grass',()=>{const tree=item('tree','tree_oak',10,10);assert.equal(placementResult({key:'lamp_glow',x:10.6,y:10},[tree]).valid,true)});

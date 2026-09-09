@@ -1,5 +1,5 @@
 /* me+ v13 — official branding + startup consistency */
-const V13_ICON='./assets/icon-192.png';
+const V13_ICON='./assets/icon-192.png?v=14';
 launchV8=function(){if(document.getElementById('v8-launch'))return;const s=document.createElement('div');s.id='v8-launch';s.className='launch-v8 v13-launch';s.innerHTML=`<div class="launch-v8-inner"><img class="v13-launch-icon" src="${V13_ICON}" alt=""><div class="launch-v8-name">me+</div><div class="launch-v8-line"><i></i></div></div>`;document.body.appendChild(s)};
 registerSW=async function(){if(!('serviceWorker'in navigator))return;try{const reg=await navigator.serviceWorker.register('./sw.js?v=13q2',{updateViaCache:'none'});await reg.update().catch(()=>{})}catch(e){console.warn('sw',e)}};
-try{document.documentElement.classList.add('meplus-v13');const apple=document.querySelector('link[rel="apple-touch-icon"]');if(apple)apple.href='./assets/icon-180.png';const fav=document.querySelector('link[rel="icon"]');if(fav)fav.href='./assets/icon-192.png'}catch{}
+try{document.documentElement.classList.add('meplus-v13');const apple=document.querySelector('link[rel="apple-touch-icon"]');if(apple)apple.href='./assets/icon-180.png?v=14';const fav=document.querySelector('link[rel="icon"]');if(fav)fav.href='./assets/icon-192.png?v=14'}catch{}

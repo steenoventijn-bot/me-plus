@@ -1,0 +1,194 @@
+[
+  {
+    "slug": "bomen-netwerk",
+    "question": "Wat krijgen mycorrhizaschimmels van planten in ruil voor hun hulp bij water en mineralen?",
+    "options": [
+      "Zuurstofrijke bloedcellen",
+      "Koolstofrijke suikers uit fotosynthese",
+      "Kleine stukjes boomschors",
+      "Warmte uit de boomstam"
+    ],
+    "correct": 1,
+    "explanation": "Planten leveren suikers uit fotosynthese. De schimmeldraden helpen water en mineralen te bereiken."
+  },
+  {
+    "slug": "cities-and-trade",
+    "question": "Waarom groeiden veel oude steden bij rivieren en kruispunten van handelsroutes?",
+    "options": [
+      "Omdat daar nooit overstromingen voorkwamen",
+      "Omdat landbouw daar overbodig was",
+      "Omdat alle handelaren er dezelfde taal spraken",
+      "Omdat goederen en mensen er efficiënt konden samenkomen"
+    ],
+    "correct": 3,
+    "explanation": "Goede verbindingen maakten transport, handel, opslag en ambachten aantrekkelijk."
+  },
+  {
+    "slug": "culturele-tijdzones",
+    "question": "Waarom gingen plaatsen over van lokale zonnetijd naar standaardtijd?",
+    "options": [
+      "Om spoorwegen en communicatie over grotere gebieden te synchroniseren",
+      "Omdat de zon overal tegelijk opkwam",
+      "Omdat alle landen één regering kregen",
+      "Om de lengte van een dag te veranderen"
+    ],
+    "correct": 0,
+    "explanation": "Dienstregelingen en snelle communicatie maakten veel verschillende lokale tijden onpraktisch."
+  },
+  {
+    "slug": "geheugen-reconstructie",
+    "question": "Wat bedoelt de tekst met het reconstructieve karakter van geheugen?",
+    "options": [
+      "Elke herinnering blijft een exacte video",
+      "Alleen emoties worden opgeslagen",
+      "Herinneringen worden opnieuw samengesteld en kunnen veranderen",
+      "Zelfvertrouwen bewijst dat een herinnering klopt"
+    ],
+    "correct": 2,
+    "explanation": "Je brein combineert beelden, emoties, kennis en verwachtingen opnieuw. Nieuwe informatie kan herinneringen beïnvloeden."
+  },
+  {
+    "slug": "gewoonte-anker",
+    "question": "Wat is een bruikbaar anker voor een nieuwe gewoonte?",
+    "options": [
+      "Wachten op veel motivatie",
+      "Nieuw gedrag koppelen aan iets dat al vanzelf gebeurt",
+      "Meteen de zwaarste versie van het gedrag kiezen",
+      "Iedere dag een ander startmoment zoeken"
+    ],
+    "correct": 1,
+    "explanation": "Een bestaand moment, zoals na de lunch, vermindert de dagelijkse beslissing over wanneer je begint."
+  },
+  {
+    "slug": "gps-positioning",
+    "question": "Waarom zijn in de praktijk minstens vier GPS-satellieten nuttig?",
+    "options": [
+      "Elke satelliet bestuurt één app",
+      "De vierde satelliet maakt de kaartfoto",
+      "Vier signalen zijn nodig om wifi aan te zetten",
+      "Je telefoon moet drie coördinaten én een klokfout bepalen"
+    ],
+    "correct": 3,
+    "explanation": "Naast drie ruimtelijke coördinaten moet het toestel de kleine afwijking van zijn eigen klok oplossen."
+  },
+  {
+    "slug": "inflatie-kern",
+    "question": "Wat betekent het meestal als inflatie van acht naar drie procent daalt?",
+    "options": [
+      "Het gemiddelde prijsniveau stijgt nog, maar langzamer",
+      "Alle prijzen gaan terug naar hun oude niveau",
+      "Elk product wordt vijf procent goedkoper",
+      "Huishoudens ervaren voortaan dezelfde prijzen"
+    ],
+    "correct": 0,
+    "explanation": "Lagere positieve inflatie betekent een tragere prijsstijging. Het is niet hetzelfde als een dalend prijsniveau."
+  },
+  {
+    "slug": "octopus-harten",
+    "question": "Welke taak hebben de twee kieuw-harten van een octopus?",
+    "options": [
+      "Ze maken het bloed rood",
+      "Ze sturen bloed rechtstreeks naar alle armen",
+      "Ze pompen bloed door de kieuwen voor zuurstofopname",
+      "Ze vervangen de kieuwen tijdens zwemmen"
+    ],
+    "correct": 2,
+    "explanation": "De branchiale harten sturen bloed door de kieuwen. Het centrale hart pompt het zuurstofrijke bloed door het lichaam."
+  },
+  {
+    "slug": "olbers-paradox-dark-night",
+    "question": "Welke combinatie helpt verklaren waarom de nachtelijke hemel donker is?",
+    "options": [
+      "Alle sterren doven tegelijk en de aarde staat stil",
+      "Het heelal heeft een eindige leeftijd en dijt uit",
+      "Het heelal is oneindig oud en krimpt",
+      "Sterren geven uitsluitend onzichtbaar licht"
+    ],
+    "correct": 1,
+    "explanation": "Niet al het verre licht heeft ons bereikt. Door uitdijing wordt licht ook naar langere golflengten uitgerekt."
+  },
+  {
+    "slug": "procrastination-emotion",
+    "question": "Waarom kan een heel kleine eerste stap helpen tegen uitstellen?",
+    "options": [
+      "Omdat plannen dan overbodig is",
+      "Omdat de hele taak vanzelf verdwijnt",
+      "Omdat je eerst maximale motivatie nodig hebt",
+      "Omdat de emotionele drempel om te beginnen lager wordt"
+    ],
+    "correct": 3,
+    "explanation": "Een kleine, concrete start maakt een onzekere of onaangename taak minder overweldigend."
+  },
+  {
+    "slug": "qr-foutcorrectie",
+    "question": "Hoe kan een scanner beschadigde informatie in een QR-code herstellen?",
+    "options": [
+      "Met extra, redundante informatie in de code",
+      "Door altijd het origineel van internet te downloaden",
+      "Door de drie grote vierkanten als tekst te lezen",
+      "Door ontbrekende vakjes willekeurig in te vullen"
+    ],
+    "correct": 0,
+    "explanation": "Foutcorrectie gebruikt extra informatie om ontbrekende gegevens terug te rekenen. Niet iedere soort schade is herstelbaar."
+  },
+  {
+    "slug": "rome-beton",
+    "question": "Waardoor kunnen sommige kleine scheuren in Romeins beton gedeeltelijk worden gevuld?",
+    "options": [
+      "Stalen wapening groeit voortdurend aan",
+      "Elke scheur verdwijnt door zonlicht",
+      "Water reageert met kalkrijke delen en vormt nieuw materiaal",
+      "Romeins beton heeft nooit poriën"
+    ],
+    "correct": 2,
+    "explanation": "Water kan reacties met kalkrijke deeltjes op gang brengen. Nieuw materiaal kan een kleine opening gedeeltelijk vullen."
+  },
+  {
+    "slug": "slaap-geheugen",
+    "question": "Hoe heet het proces waarbij nieuwe herinneringen tijdens slaap stabieler worden?",
+    "options": [
+      "Foutcorrectie",
+      "Consolidatie",
+      "Fotosynthese",
+      "Inflatie"
+    ],
+    "correct": 1,
+    "explanation": "Consolidatie helpt nieuwe herinneringen te stabiliseren en aan bestaande kennis te koppelen."
+  },
+  {
+    "slug": "whales-carbon-cycle",
+    "question": "Hoe kunnen walvissen indirect de groei van plankton ondersteunen?",
+    "options": [
+      "Door het zonlicht tegen te houden",
+      "Door alle koolstof uit zeewater te verwijderen",
+      "Door voedingsstoffen op één diepte vast te houden",
+      "Door voedingsstoffen tussen waterlagen te verplaatsen"
+    ],
+    "correct": 3,
+    "explanation": "Walvissen eten en scheiden afvalstoffen vaak op verschillende diepten uit. Daardoor komen voedingsstoffen beschikbaar voor plankton."
+  },
+  {
+    "slug": "why-interest-rates-matter",
+    "question": "Waarom kan een bedrijf een investering uitstellen wanneer rente stijgt?",
+    "options": [
+      "Duurdere financiering kan het project minder aantrekkelijk maken",
+      "Bestaande leningen verdwijnen dan",
+      "Hogere rente maakt investeringen altijd winstgevender",
+      "Rente beïnvloedt alleen spaargeld"
+    ],
+    "correct": 0,
+    "explanation": "Bij duurder krediet kan een project te weinig opleveren ten opzichte van de financieringskosten."
+  },
+  {
+    "slug": "zonlicht-acht-minuten",
+    "question": "Wat is een lichtjaar?",
+    "options": [
+      "De omlooptijd van de aarde rond de zon",
+      "De helderheid van een ster gedurende een jaar",
+      "De afstand die licht in één jaar aflegt",
+      "De leeftijd van het zonlicht dat vandaag aankomt"
+    ],
+    "correct": 2,
+    "explanation": "Een lichtjaar is een afstandseenheid. Hoe verder een object wegstaat, hoe langer zijn licht onderweg is."
+  }
+]

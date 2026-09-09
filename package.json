@@ -1,0 +1,29 @@
+{
+  "name": "me-plus",
+  "version": "1.0.0",
+  "description": "me+ is een Nederlandstalige, installeerbare PWA voor dagelijkse planning, gewoontes, doelen, kennis en persoonlijke voortgang.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 4173",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/steenoventijn-bot/me-plus.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/steenoventijn-bot/me-plus/issues"
+  },
+  "homepage": "https://github.com/steenoventijn-bot/me-plus#readme",
+  "dependencies": {
+    "three": "0.186.0"
+  },
+  "devDependencies": {
+    "vite": "8.0.3"
+  },
+  "private": true
+}
