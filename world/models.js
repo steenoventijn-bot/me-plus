@@ -168,6 +168,15 @@ export function itemModel(key,house={}){
   for(const x of [-.14,.14])for(const z of [-.14,.14])b.pole('#253b3b',x,1.7,z,.018,.4);
   const geo=new T.ConeGeometry(.24,.2,4,1,false,Math.PI/4);b.add(geo,material('#233d3d'),0,1.97,0);geo.dispose();b.ball('#bda263',0,2.1,0,.04);
  }
+ else if(originalKey==='knowledge_stand'){
+  for(const x of [-.66,.66])b.pole('#987044',x,.75,0,.045,1.5);
+  b.box('#c49459',0,.59,.12,1.55,.12,.74);b.box('#e4bf84',0,.3,.08,1.4,.54,.57);
+  b.box('#5a9273',0,1.52,0,1.75,.09,1.10,-.13);
+  for(const x of [-.55,-.18,.18,.55])b.box('#f3e6c7',x,1.53,.02,.16,.04,1.04,-.13);
+  for(let i=0;i<6;i++){const x=-.52+i*.2;b.box(['#b97555','#558b8d','#b8a05e'][i%3],x,.79,.06,.13,.3+i%2*.04,.23,0,0,(i%2-.5)*.15);b.box('#f4ebce',x,.79,.19,.095,.25,.025)}
+  b.box('#f5dfac',0,1.15,.07,.68,.30,.055);
+  for(const x of [-.105,.105])b.box('#709584',x,1.16,.105,.17,.19,.018,0,0,x>0?-.10:.10);
+ }
  else if(key==='knowledge_house'||key==='growth_zone'){const g=houseModel({...houseDefaults,style:originalKey==='social_house'?'cottage':key==='knowledge_house'?'coastal':'modern',roof:originalKey==='social_house'?'red':originalKey==='streak_house60'?'gold':key==='knowledge_house'?'purple':'green',decor:'hedge',chimney:'none'});g.scale.setScalar(.58);return g}
  else if(key==='fountain'){
   b.pole('#c8c4ac',0,.16,0,.7,.32);b.pole(material('#57b7cb',.2,.3),0,.33,0,.57,.04);b.pole('#ded6b9',0,.6,0,.15,.6);b.add(new T.ConeGeometry(.37,.16,24),material('#ede2c4'),0,.89,0);b.ball(material('#a3e3e7',.16,.2),0,1.02,0,.12,.2,.12);

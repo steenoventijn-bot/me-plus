@@ -1,0 +1,45 @@
+/* Visual item browser. Pictures are cached for this session and match the world models. */
+const w15Pictures=new Map();let w15Pending=null,w15CloseBrowser=null;
+function w15Category(key){if(/house|library|stand|growth_zone/.test(key))return 'Gebouwen';if(/pond|pool|stream|waterfall|fountain|dock|bridge/.test(key))return 'Water';if(/tree|palm|bush|flower|rock|garden/.test(key))return 'Natuur';return 'Decoratie'}
+function w15CancelPlacement(){w14Stage?.cancelPlacement();w15Pending=null;w14Dock();w14Hint('Bewerkmodus · houd vast en sleep')}
+const w15OriginalDock=w14Dock;
+w14Dock=function(){
+ if(!w15Pending)return w15OriginalDock();const node=el('w14-dock');if(!node)return;
+ node.innerHTML=`<div class="w14-selected"><strong>${esc(w14ItemName(w15Pending))}</strong><span>Tik op het gras om de plek te kiezen</span></div><button id="w15-cancel">Annuleren</button><button id="w15-confirm">Plaatsen ✓</button>`;
+ el('w15-cancel').onclick=w15CancelPlacement;
+ el('w15-confirm').onclick=async()=>{const b=el('w15-confirm');b.disabled=true;try{if(await w14Stage?.commitPlacement()){w15Pending=null;w14Dock()}}finally{if(b.isConnected)b.disabled=false}};
+};
+async function w15Choose(key){
+ w15CloseBrowser?.();mw.edit=true;mw.selectedItem=null;w15Pending=key;render();
+ try{await w14Engine();if(view!=='world'||!mw.data?.isOwner)return;
+  if(!w14Stage?.beginPlacement(key)){w15Pending=null;w14Dock();return toast('Je eiland wordt nog geladen. Probeer het zo opnieuw.')}
+  w14Hint('Kies een plek op het gras en tik op Plaatsen.');
+ }catch(e){w15Pending=null;w14Dock();toast('De voorbeeldweergave kon niet laden. Probeer opnieuw.')}
+}
+mwOpenItems=function(){
+ if(!mw.data?.isOwner)return;w15CloseBrowser?.();w15CancelPlacement();
+ const account=w14Own(),abort=new AbortController();let category='Alles',query='',closed=false;
+ const wrap=document.createElement('div');wrap.className='w15-browser';
+ wrap.innerHTML=`<section class="w15-panel" role="dialog" aria-modal="true" aria-labelledby="w15-title"><header><div><small>MAAK HET VAN JOU</small><h2 id="w15-title">Items voor je eiland</h2></div><button data-close aria-label="Sluiten">×</button></header><p>Kies een item, wijs een plek aan en tik op Plaatsen.</p><div class="w15-search"><input type="search" placeholder="Zoek een huis, boom, vijver…" aria-label="Items zoeken"><span id="w15-coins"></span></div><div class="w15-filters" role="group" aria-label="Categorie"></div><div class="w15-grid"></div><footer>Alles wat je plaatst, kun je later weer verplaatsen.</footer></section>`;
+ document.body.appendChild(wrap);w14Stage?.pause(true);
+ const close=()=>{if(closed)return;closed=true;abort.abort();wrap.remove();w15CloseBrowser=null;if(view==='world')w14Stage?.pause(false);el('w15-items')?.focus()};w15CloseBrowser=close;
+ wrap.querySelector('[data-close]').onclick=close;wrap.onclick=e=>{if(e.target===wrap)close()};
+ wrap.addEventListener('keydown',e=>{if(e.key==='Escape')close();if(e.key==='Tab'){const focus=[...wrap.querySelectorAll('button:not(:disabled),input')],first=focus[0],last=focus.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
+ const paint=()=>{
+  if(closed||account!==w14Own()||!mw.data?.isOwner)return close();
+  const inventory=new Map((mw.data.inventory||[]).map(x=>[x.item_key,Number(x.quantity)])),unlocks=new Set((mw.data.unlocks||[]).map(x=>x.item_key));
+  const placed=new Set((mw.data.items||[]).map(x=>x.item_key));
+  wrap.querySelector('#w15-coins').textContent=(mw.data.world.coins||0)+' coins';
+  wrap.querySelector('.w15-filters').innerHTML=['Alles','In voorraad','Gebouwen','Natuur','Water','Decoratie'].map(x=>`<button data-category="${x}" aria-pressed="${category===x}">${x}</button>`).join('');
+  wrap.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{category=b.dataset.category;paint()});
+  const catalog=(mw.data.catalog||[]).filter(x=>x.item_key!=='house_main').filter(x=>(category==='Alles'||category==='In voorraad'&&inventory.get(x.item_key)>0||w15Category(x.item_key)===category)&&(!query||(x.name+' '+x.item_key).toLowerCase().includes(query))).sort((a,b)=>Number((inventory.get(b.item_key)||0)>0)-Number((inventory.get(a.item_key)||0)>0)||a.name.localeCompare(b.name,'nl'));
+  wrap.querySelector('.w15-grid').innerHTML=catalog.map(c=>{const key=c.item_key,qty=inventory.get(key)||0,unlocked=unlocks.has(key)||c.default_unlocked,price=Number(c.price)||0,buy=unlocked&&price>0;
+   return `<article class="w15-card"><div class="w15-picture" data-picture="${esc(key)}">${w15Pictures.has(key)?`<img src="${w15Pictures.get(key)}" alt="${esc(c.name)}" width="240" height="180">`:'<span>Voorbeeld laden…</span>'}</div><div class="w15-card-copy"><small>${w15Category(key)}</small><h3>${esc(c.name)}</h3><p>${qty?qty+' in voorraad':placed.has(key)?'Staat op je eiland':unlocked?'Nog niet in voorraad':'Vrijspelen via Collectie'}</p>${qty?`<button data-place="${esc(key)}">Kies dit item <span>↗</span></button>`:buy?`<button data-buy="${esc(key)}" ${Number(mw.data.world.coins||0)<price?'disabled':''}>Kopen · ${price} coins</button>`:'<span class="w15-unavailable">'+(placed.has(key)?'Verplaats via Bewerken':'Nog niet beschikbaar')+'</span>'}</div></article>`}).join('')||'<p class="w15-empty">Geen items gevonden. Kies een andere categorie of zoekterm.</p>';
+  wrap.querySelectorAll('[data-place]').forEach(b=>b.onclick=()=>w15Choose(b.dataset.place));
+  wrap.querySelectorAll('[data-buy]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const result=await apiWorld('buy',{itemKey:b.dataset.buy});if(account!==w14Own())return close();mw.data=result;paint();toast('Toegevoegd aan je voorraad. Je kunt het nu plaatsen.')}catch(e){toast(e.message);if(b.isConnected)b.disabled=false}});
+ };
+ wrap.querySelector('input').oninput=e=>{query=e.target.value.trim().toLowerCase();paint()};paint();wrap.querySelector('[data-close]').focus();
+ w14Engine().then(engine=>{if(closed)return;const keys=(mw.data.catalog||[]).map(x=>x.item_key).filter(k=>k!=='house_main'&&!w15Pictures.has(k));return engine.renderItemPictures(keys,(key,url)=>{w15Pictures.set(key,url);if(closed)return;for(const slot of wrap.querySelectorAll('[data-picture]'))if(slot.dataset.picture===key){const img=document.createElement('img');img.src=url;img.alt=w14ItemName(key);img.width=240;img.height=180;slot.replaceChildren(img)}},abort.signal)}).catch(()=>{if(!closed)wrap.querySelectorAll('[data-picture] span').forEach(x=>x.textContent='Voorbeeld niet beschikbaar')});
+};
+const w15Bind=bind;
+bind=function(){w15Bind();document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>{w15CloseBrowser?.();w15Pending=null;w14Stage?.cancelPlacement()}));el('w14-edit')?.addEventListener('click',()=>{if(!mw.edit)w15CancelPlacement()})};

@@ -1,3 +1,3 @@
 /* A quiet launch and one readable homescreen wordmark. */
 launchV8=function(){if(el('v8-launch'))return;const node=document.createElement('div');node.id='v8-launch';node.className='k14-launch';node.setAttribute('role','status');node.innerHTML='<div class="k14-launch-inner"><div class="k14-wordmark">me<span>+</span></div><p>Een goede dag begint bij jou.</p><div class="k14-launch-progress"><i></i></div><small>Je account laden…</small></div>';document.body.appendChild(node)};
-registerSW=async function(){if(!('serviceWorker'in navigator))return;try{const reg=await navigator.serviceWorker.register('./sw.js?v=14.0.1',{updateViaCache:'none'});void reg.update().catch(()=>{})}catch(e){console.warn('sw',e)}};
+registerSW=async function(){if(!('serviceWorker'in navigator))return;try{const reg=await navigator.serviceWorker.register('./sw.js?v=14.1.0',{updateViaCache:'none'});void reg.update().catch(()=>{})}catch(e){console.warn('sw',e)}};

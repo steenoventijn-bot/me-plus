@@ -9,13 +9,18 @@ function terrain(){
  for(let row=0;row<=rings;row++)for(let i=0;i<=n;i++){
   const a=i/n*Math.PI*2,f=row/rings,rr=coastRadius(a),x=Math.cos(a)*8.7*rr*f,z=Math.sin(a)*8.15*rr*f;
   let y=f<.94?groundY:groundY-(f-.94)/.06*.7;
-  const noise=Math.sin(x*17.2+z*11.1)*Math.cos(x*9.7-z*19.8)*.035;
+  const noise=Math.sin(x*.85+z*.43)*Math.cos(z*.73-x*.21)*.028+Math.sin(x*17.2+z*11.1)*.008;
   positions.push(x,y,z);
-  color.set(f>.947?'#e9cb85':f>.92?'#d6d480':'#83b940');color.offsetHSL(0,noise*.5,noise+(1-f)*.035);colors.push(color.r,color.g,color.b);
+  color.set(f>.98?'#bfac8b':f>.947?'#efd398':f>.92?'#ccd283':'#85bd48');color.offsetHSL(0,noise*.5,noise+(1-f)*.035);colors.push(color.r,color.g,color.b);
   if(row<rings&&i<n){const v=row*(n+1)+i;indices.push(v,v+1,v+n+1,v+1,v+n+2,v+n+1)}
  }
  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('color',new T.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();
- const mesh=new T.Mesh(g,new T.MeshStandardMaterial({vertexColors:true,roughness:1,side:T.DoubleSide}));mesh.receiveShadow=true;return mesh;
+ const mesh=new T.Mesh(g,new T.MeshStandardMaterial({vertexColors:true,roughness:1,side:T.DoubleSide}));mesh.receiveShadow=true;
+ const coast=new Builder(),rng=random(713);
+ for(let i=0;i<54;i++){const a=i/54*Math.PI*2,r=coastRadius(a)*.989;
+  coast.ball(i%3===0?'#b7b3a3':i%3===1?'#cfc5ad':'#c1b396',Math.cos(a)*8.7*r,-.09,Math.sin(a)*8.15*r,.20+rng()*.10,.25+rng()*.15,.20+rng()*.07);
+ }
+ const group=new T.Group();group.add(mesh,coast.end());return group;
 }
 function ocean(){
  const uniforms={time:{value:0}};
@@ -28,7 +33,7 @@ function ocean(){
  float n=noise(p*2.1+vec2(time*.12,time*.07));float w=sin(p.x*2.8+p.y*3.7+n*5.+time*.7);float cross=sin(p.x*5.-p.y*2.6+n*3.-time*.52);
  float glint=pow(max(0.,w*cross),14.);col+=vec3(.43,.68,.68)*glint*.43;
  float caustic=pow(1.-abs(sin(p.x*3.1+n*4.+time*.2)*sin(p.y*4.3+n*2.)),13.);col+=caustic*vec3(.1,.21,.15)*(1.-depth)*.32;
- float foam=smoothstep(.10,.01,abs(coast-(.987+.012*sin(time*.48+n*5.))))*smoothstep(.34,.66,n);col=mix(col,vec3(.82,.96,.89),foam*.65);
+ float foam=smoothstep(.10,.01,abs(coast-(.987+.012*sin(time*.48+n*5.))))*smoothstep(.34,.66,n);col=mix(col,vec3(.82,.96,.89),foam*.72);float ripple=pow(max(0.,sin((coast-1.)*180.-time*.85+n*3.)),18.)*(1.-smoothstep(1.01,1.20,coast))*smoothstep(.99,1.02,coast);col=mix(col,vec3(.79,.96,.94),ripple*.38);
  float haze=smoothstep(17.,45.,-p.y);col=mix(col,vec3(.34,.74,.85),haze);
  gl_FragColor=vec4(col,1.);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>}`});
  const geo=new T.PlaneGeometry(100,100,1,1);geo.rotateX(-Math.PI/2);const mesh=new T.Mesh(geo,mat);mesh.position.y=-.19;return mesh;
@@ -50,6 +55,7 @@ export function createWorld(host,{onSelect=()=>{},onDrop=()=>{},onHint=()=>{},on
  const canvas=renderer.domElement;canvas.className='w14-canvas';canvas.setAttribute('aria-label','Je eiland in 3D. Houd een object vast om het te verplaatsen.');canvas.tabIndex=0;host.appendChild(canvas);
  const scene=new T.Scene();scene.background=skyTexture();scene.fog=new T.Fog('#88d4e4',40,85);const camera=new T.PerspectiveCamera(34,1,.1,140),ray=new T.Raycaster(),plane=new T.Plane(new T.Vector3(0,1,0),-groundY),target=new T.Vector3(0,0,0),objects=new Map();
  lighting(scene);scene.add(terrain(),grass());const water=ocean();scene.add(water);let paths=new T.Group();scene.add(paths);
+ let awaitingPlacement=false,lastPlacement=null,committingPlacement=false;
  let data=null,edit=false,selected=null,zoom=1,pan=new T.Vector2(),frame=0,disposed=false,paused=false,last=0,slow=0,frames=0,ms=0,drag=null,hold=null,down=null,pinch=null,ghost=null,ghostKey=null;
  const points=new Map();const ring=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({color:'#42e298',transparent:true,opacity:.32,side:T.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=groundY+.028;ring.visible=false;scene.add(ring);
  function resize(){const r=host.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();updateCamera()}
@@ -59,14 +65,14 @@ export function createWorld(host,{onSelect=()=>{},onDrop=()=>{},onHint=()=>{},on
  function clearHold(){clearTimeout(hold);hold=null}
  function clearDrag(){if(drag?.id&&objects.has(drag.id))objects.get(drag.id).visible=true;drag=null;if(ghost){scene.remove(ghost);disposeModel(ghost);ghost=null}ghostKey=null;ring.visible=false;canvas.classList.remove('dragging');}
  function showGhost(key){if(ghostKey===key)return;if(ghost){scene.remove(ghost);disposeModel(ghost)}ghost=itemModel(key,data?.world?.house);ghost.traverse(o=>{if(o.isMesh){o.castShadow=false}});scene.add(ghost);ghostKey=key;}
- function preview(x,y){if(!drag||!data)return null;const p=ground(x,y);if(!p){ring.visible=false;return null}const q={key:drag.key,id:drag.id,rotation:drag.rotation,...p},result=placementResult(q,data.items);showGhost(drag.key);ghost.position.set(p.x-9.5,groundY+.1,p.y-9.5);ghost.rotation.y=-drag.rotation*Math.PI/180;ring.visible=true;ring.material.color.set(result.valid?'#2fe797':'#ff4e52');const f=footprint(drag.key,drag.rotation);ring.scale.set(f.w,f.h,1);ring.position.set(p.x+f.ox-9.5,groundY+.04,p.y+f.oy-9.5);onHint(result.reason,result.valid);return{...q,...result};}
+ function preview(x,y){if(!drag||!data)return null;const p=ground(x,y);if(!p){ring.visible=false;return null}const q={key:drag.key,id:drag.id,rotation:drag.rotation,...p},result=placementResult(q,data.items);showGhost(drag.key);ghost.position.set(p.x-9.5,groundY+.1,p.y-9.5);ghost.rotation.y=-drag.rotation*Math.PI/180;ring.visible=true;ring.material.color.set(result.valid?'#2fe797':'#ff4e52');const f=footprint(drag.key,drag.rotation);ring.scale.set(f.w,f.h,1);ring.position.set(p.x+f.ox-9.5,groundY+.04,p.y+f.oy-9.5);onHint(result.reason,result.valid);lastPlacement={...q,...result};return lastPlacement;}
  function startDrag(key,id,e){if(!edit||!data?.isOwner)return;clearHold();const item=data.items.find(i=>i.id===id);drag={key,id,rotation:Number(item?.rotation||0)};if(id&&objects.has(id))objects.get(id).visible=false;canvas.classList.add('dragging');preview(e.clientX,e.clientY);}
  async function finish(e){const q=preview(e.clientX,e.clientY);clearDrag();if(q?.valid)await onDrop(q);else if(q)onHint(q.reason,false)}
  const abort=new AbortController(),opts={signal:abort.signal};
- canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;canvas.setPointerCapture(e.pointerId);points.set(e.pointerId,{x:e.clientX,y:e.clientY});if(points.size===2){clearHold();clearDrag();const a=[...points.values()];pinch={distance:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),zoom};return}const item=hit(e);down={x:e.clientX,y:e.clientY,item,pan:pan.clone(),at:performance.now()};if(edit&&item&&data?.isOwner){hold=setTimeout(()=>{startDrag(item.item_key,item.id,e);onSelect(item.id)},320)}},opts);
+ canvas.addEventListener('pointerdown',e=>{if(e.button!==0||committingPlacement||awaitingPlacement&&points.size>0)return;canvas.setPointerCapture(e.pointerId);points.set(e.pointerId,{x:e.clientX,y:e.clientY});if(points.size===2){clearHold();clearDrag();const a=[...points.values()];pinch={distance:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),zoom};return}if(awaitingPlacement){preview(e.clientX,e.clientY);return}const item=hit(e);down={x:e.clientX,y:e.clientY,item,pan:pan.clone(),at:performance.now()};if(edit&&item&&data?.isOwner){hold=setTimeout(()=>{startDrag(item.item_key,item.id,e);onSelect(item.id)},320)}},opts);
  canvas.addEventListener('pointermove',e=>{if(!points.has(e.pointerId))return;points.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pinch&&points.size===2){const a=[...points.values()];zoom=T.MathUtils.clamp(pinch.zoom*Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)/pinch.distance,.75,2.25);updateCamera();return}if(drag){preview(e.clientX,e.clientY);return}if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.hypot(dx,dy)>9){clearHold();const scale=24/canvas.clientWidth/zoom;pan.set(T.MathUtils.clamp(down.pan.x-dx*scale,-7,7),T.MathUtils.clamp(down.pan.y-dy*scale,-7,7));updateCamera()}},opts);
- canvas.addEventListener('pointerup',e=>{clearHold();points.delete(e.pointerId);if(drag)void finish(e);else if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<9&&edit)onSelect(down.item?.id||null);down=null;if(points.size<2)pinch=null},opts);
- canvas.addEventListener('pointercancel',()=>{clearHold();clearDrag();down=null;points.clear();pinch=null},opts);
+ canvas.addEventListener('pointerup',e=>{if(!points.has(e.pointerId))return;clearHold();points.delete(e.pointerId);if(awaitingPlacement)preview(e.clientX,e.clientY);else if(drag)void finish(e);else if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<9&&edit)onSelect(down.item?.id||null);down=null;if(points.size<2)pinch=null},opts);
+ canvas.addEventListener('pointercancel',()=>{clearHold();if(!awaitingPlacement)clearDrag();down=null;points.clear();pinch=null},opts);
  canvas.addEventListener('contextmenu',e=>e.preventDefault(),opts);
  canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=T.MathUtils.clamp(zoom*Math.exp(-e.deltaY*.001),.75,2.25);updateCamera()},{...opts,passive:false});
  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();paused=true;onError('De 3D-weergave is onderbroken. Open je wereld opnieuw.')},opts);
@@ -76,9 +82,23 @@ export function createWorld(host,{onSelect=()=>{},onDrop=()=>{},onHint=()=>{},on
  function updatePaths(){scene.remove(paths);disposeModel(paths);paths=new T.Group();const h=data.items.find(i=>i.item_key==='house_main'),dock=data.items.find(i=>i.item_key==='dock_wood');if(h&&dock){const a=itemPosition(h),b=itemPosition(dock),angle=-(h.rotation||0)*Math.PI/180,start={x:a.x+Math.sin(angle)*1.6,y:a.y+Math.cos(angle)*1.6};paths.add(pathStrip([start,{x:9.3,y:11.3},{x:10.3,y:14.5},b]),pathStrip([{x:4.4,y:11.4},{x:7,y:12.2},{x:9.3,y:11.3}]))}scene.add(paths)}
  function update(next){const changedOwner=data?.owner?.id!==next.owner?.id;data=next;const ids=new Set(next.items.map(i=>i.id));for(const[id,g]of objects)if(!ids.has(id)){scene.remove(g);disposeModel(g);objects.delete(id)}
  for(const it of next.items){const signature=it.item_key+(it.item_key==='house_main'?JSON.stringify(next.world.house):'');let group=objects.get(it.id);if(group?.userData.signature!==signature){if(group){scene.remove(group);disposeModel(group)}group=itemModel(it.item_key,next.world.house);group.userData={item:it,signature};objects.set(it.id,group);scene.add(group)}group.userData.item=it;const p=itemPosition(it);group.position.set(p.x-9.5,groundY,p.y-9.5);group.rotation.y=-(Number(it.rotation)||0)*Math.PI/180}
- renderer.shadowMap.needsUpdate=true;updatePaths();if(changedOwner){zoom=1;pan.set(0,0);updateCamera();clearDrag()} }
+ renderer.shadowMap.needsUpdate=true;updatePaths();if(changedOwner){awaitingPlacement=false;lastPlacement=null;zoom=1;pan.set(0,0);updateCamera();clearDrag()} }
  resize();frame=requestAnimationFrame(render);
- return {canvas,update,point:ground,select(id){selected=id},setEdit(value){edit=value;if(!edit)clearDrag()},setZoom(delta){zoom=T.MathUtils.clamp(zoom+delta,.75,2.25);updateCamera()},reset(){zoom=1;pan.set(0,0);updateCamera()},pause(v){paused=v;last=0;cancelAnimationFrame(frame);frame=0;if(!v&&!disposed&&!document.hidden)frame=requestAnimationFrame(render)},mount(node){host=node;host.appendChild(canvas);observer.disconnect();observer.observe(host);resize()},project(x,y,height=.5){const p=new T.Vector3(x-9.5,height,y-9.5).project(camera);return{x:(p.x+1)/2*canvas.clientWidth,y:(1-p.y)/2*canvas.clientHeight}},
+ return {canvas,update,point:ground,select(id){selected=id},setEdit(value){edit=value;if(!edit){awaitingPlacement=false;clearDrag()}},setZoom(delta){zoom=T.MathUtils.clamp(zoom+delta,.75,2.25);updateCamera()},reset(){zoom=1;pan.set(0,0);updateCamera()},pause(v){paused=v;last=0;cancelAnimationFrame(frame);frame=0;if(!v&&!disposed&&!document.hidden)frame=requestAnimationFrame(render)},mount(node){host=node;host.appendChild(canvas);observer.disconnect();observer.observe(host);resize()},project(x,y,height=.5){const p=new T.Vector3(x-9.5,height,y-9.5).project(camera);return{x:(p.x+1)/2*canvas.clientWidth,y:(1-p.y)/2*canvas.clientHeight}},
+ beginPlacement(key){
+  if(!edit||!data?.isOwner)return false;
+  clearDrag();awaitingPlacement=true;
+  const rect=canvas.getBoundingClientRect();startDrag(key,null,{clientX:rect.left+rect.width/2,clientY:rect.top+rect.height*.55});return true;
+ },
+ async commitPlacement(){
+  if(committingPlacement||!awaitingPlacement||!lastPlacement)return false;
+  const q=lastPlacement,check=placementResult(q,data.items);
+  if(!check.valid){onHint(check.reason,false);return false}
+  committingPlacement=true;try{const saved=await onDrop(q);
+  if(saved){awaitingPlacement=false;clearDrag()}
+  return !!saved;}finally{committingPlacement=false}
+ },
+ cancelPlacement(){awaitingPlacement=false;lastPlacement=null;clearDrag()},
  beginInventoryDrag(key,e){startDrag(key,null,e);const move=ev=>preview(ev.clientX,ev.clientY),stop=ev=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',stop);document.removeEventListener('pointercancel',cancel);void finish(ev)},cancel=()=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',stop);document.removeEventListener('pointercancel',cancel);clearDrag()};document.addEventListener('pointermove',move);document.addEventListener('pointerup',stop);document.addEventListener('pointercancel',cancel);return cancel},
  dispose(){disposed=true;cancelAnimationFrame(frame);abort.abort();observer.disconnect();clearHold();clearDrag();scene.traverse(o=>o.geometry?.dispose());scene.background.dispose();water.material.dispose();ring.material.dispose();renderer.dispose();canvas.remove()}};
 }
@@ -89,4 +109,26 @@ export function createHousePreview(host,house){
  function update(h){if(model){scene.remove(model);disposeModel(model)}model=houseModel(h);scene.add(model);draw()}
  const resize=new ResizeObserver(draw);resize.observe(host);update(house);
  return{update,rotate(delta){angle+=delta;draw()},dispose(){disposed=true;resize.disconnect();disposeModel(model);renderer.dispose();renderer.domElement.remove()}};
+}
+
+// One temporary renderer produces static pictures, rather than one live canvas per card.
+export async function renderItemPictures(keys,onImage,signal){
+ const renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
+ renderer.setSize(240,180,false);renderer.setPixelRatio(1);renderer.outputColorSpace=T.SRGBColorSpace;
+ renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.07;
+ const scene=new T.Scene();scene.background=new T.Color('#edf3e7');lighting(scene);
+ const camera=new T.OrthographicCamera(-1,1,1,-1,.01,100);
+ try{for(const key of keys){
+  if(signal?.aborted)break;
+  await new Promise(resolve=>setTimeout(resolve,20));if(signal?.aborted)break;
+  const model=itemModel(key);scene.add(model);
+  try{
+   const box=new T.Box3().setFromObject(model),center=box.getCenter(new T.Vector3());
+   const radius=Math.max(.2,box.getSize(new T.Vector3()).length()/2),half=radius*1.13;
+   camera.left=-half*4/3;camera.right=half*4/3;camera.top=half;camera.bottom=-half;
+   camera.position.copy(center).add(new T.Vector3(1,.8,1.5).normalize().multiplyScalar(radius*4));
+   camera.lookAt(center);camera.updateProjectionMatrix();renderer.render(scene,camera);
+   onImage(key,renderer.domElement.toDataURL('image/png'));
+  }finally{scene.remove(model);disposeModel(model)}
+ }}finally{renderer.dispose();renderer.forceContextLoss()}
 }
