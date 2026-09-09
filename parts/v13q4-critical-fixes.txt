@@ -3,8 +3,17 @@ const V13Q4_AVATAR_CACHE='meplus-avatar-cache-v13q4';
 function v13q4AvatarDefaults(){return{presentation:'neutral',body:'regular',tone:'warm',hair:'wave',hairColor:'darkbrown',outfit:'tee',accessory:'none',head:'none',effect:'none',background:'mint'}}
 function v13q4NormalizeAvatar(raw){let c=raw;if(raw&&typeof raw==='object'&&('avatarConfig'in raw||'avatar_config'in raw))c=raw.avatarConfig||raw.avatar_config;if(!c||typeof c!=='object')c={};return{...v13q4AvatarDefaults(),...c}}
 function v13q4NormalizeProfile(p){if(!p||typeof p!=='object')return p;return{...p,avatarConfig:v13q4NormalizeAvatar(p.avatarConfig||p.avatar_config||{}),accentTheme:p.accentTheme||p.accent_theme||'fresh'}}
-function v13q4RememberAvatar(p){const n=v13q4NormalizeProfile(p||{});try{localStorage.setItem(V13Q4_AVATAR_CACHE,JSON.stringify({avatarConfig:n.avatarConfig,accentTheme:n.accentTheme,updatedAt:Date.now()}))}catch{}return n}
-function v13q4ApplyProfile(p){const n=v13q4RememberAvatar(p||{});server.profile={...(server.profile||{}),...n};server.v10.me={...(server.v10.me||{}),...n};v10ApplyAccent?.(n.accentTheme);return n}
+function v13q4RememberAvatar(p){return v13q4NormalizeProfile(p||{})}
+function v13q4ApplyProfile(p){
+  if(!p?.id)return p;
+  if(server.profile?.id&&p.id!==server.profile.id)return v13q4NormalizeProfile(p);
+  const previous=server.profile?.id===p.id?server.profile:{};
+  const raw=p.avatarConfig||p.avatar_config;
+  const n={...previous,...p,avatarConfig:v13q4NormalizeAvatar({...previous.avatarConfig,...raw}),accentTheme:p.accentTheme||p.accent_theme||previous.accentTheme||'fresh'};
+  server.profile=n;server.v10.me=n;v11AccountProfile=n;
+  if(mw?.data?.owner?.id===n.id)mw.data.owner={...mw.data.owner,...n};
+  v10ApplyAccent(n.accentTheme);return n;
+}
 const v13q4ApiProfileBase=apiProfile11;
 apiProfile11=async function(op,data={}){if(op==='save_avatar')data={...data,avatarConfig:v13q4NormalizeAvatar(data.avatarConfig||{})};const r=await v13q4ApiProfileBase(op,data);if(r?.profile)r.profile=v13q4ApplyProfile(r.profile);return r};
 const v13q4ApiAccountBase=apiAccount;

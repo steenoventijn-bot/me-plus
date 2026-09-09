@@ -23,7 +23,7 @@ function v10SelfBadges(){const s=server.stats||{},b=server.v10?.battles?.recent|
 function v10Collectibles(){const p=server.profile?.points||0,xp=server.v10?.me?.xp||0;return [{icon:'🦆',name:'Classic Duck',on:true},{icon:'✨',name:'Glow',on:p>=25},{icon:'👑',name:'Crown',on:p>=100},{icon:'⚔️',name:'Battle Aura',on:xp>=100}]}
 
 const v10RefreshBase=refreshBase;
-refreshBase=async function(){await v10RefreshBase();try{const g=await api10('game_profile');server.v10.me=g.profile;v10ApplyAccent(g.profile?.accentTheme)}catch(e){console.warn('v10 profile',e)}}
+refreshBase=async function(){await v10RefreshBase();try{const g=await apiProfile11('me');if(g.profile)v13q4ApplyProfile(g.profile)}catch(e){console.warn('v10 profile',e)}}
 
 async function loadSocial(tab='hub'){try{const jobs=[api('friends'),api10('battle_list'),api10('friend_leaderboard',{period:socialPeriod}),api('conversations')];const [fr,ba,lb,co]=await Promise.allSettled(jobs);if(fr.status==='fulfilled'){server.friends=fr.value.friends||[];server.incomingRequests=fr.value.incomingRequests||[];server.outgoingRequests=fr.value.outgoingRequests||[]}if(ba.status==='fulfilled')server.v10.battles=ba.value;if(lb.status==='fulfilled')server.v10.leaderboard=lb.value.rows||[];if(co.status==='fulfilled')server.conversations=co.value.conversations||[];socialTab='hub'}catch(e){toast(e.message)}}
 

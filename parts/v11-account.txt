@@ -7,7 +7,7 @@ function apiAccount(op,data={}){return call(V11_ACCOUNT_API,op,data)}
 function apiState(op,data={}){return call(V11_STATE_API,op,data)}
 function apiProfile11(op,data={}){return call(V11_PROFILE_API,op,data)}
 function v11EmptyState(name=''){return{profileName:name,events:[],done:{},goals:[],checkins:{},knowledgeSeen:false,focusId:null}}
-function v11StoreSession(r){if(r?.token)localStorage.setItem(DEVICE_KEY,r.token);if(r?.profile){server.profile=r.profile;server.v10.me={...(server.v10.me||{}),...r.profile};v11AccountProfile=r.profile;state.profileName=r.profile.name||state.profileName;save()}}
+function v11StoreSession(r){if(r?.token)localStorage.setItem(DEVICE_KEY,r.token);if(r?.profile){if(server.profile?.id!==r.profile.id){server.profile=null;server.v10.me=null}v13q4ApplyProfile(r.profile);state.profileName=r.profile.name||state.profileName;save()}}
 async function v11LoadServerState(seedLocal=true){try{const r=await apiState('load');if(r.state){state={...v11EmptyState(server.profile?.name||state.profileName),...r.state,profileName:server.profile?.name||r.state.profileName||state.profileName};localStorage.setItem(STATE_KEY,JSON.stringify(state));v11StateReady=true;return}if(seedLocal){const s=await apiState('seed',{state});if(s.state)state={...v11EmptyState(server.profile?.name||state.profileName),...s.state,profileName:server.profile?.name||state.profileName};localStorage.setItem(STATE_KEY,JSON.stringify(state))}v11StateReady=true}catch(e){console.warn('state load',e);v11StateReady=true}}
 const v11LocalSave=save;
 save=function(){v11LocalSave();if(!v11StateReady||!server.profile?.id)return;clearTimeout(v11StateTimer);v11StateTimer=setTimeout(()=>apiState('save',{state}).catch(e=>console.warn('state save',e)),450)}
