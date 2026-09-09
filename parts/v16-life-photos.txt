@@ -1,0 +1,39 @@
+/* Albums always load through the authenticated API; no photo URLs enter local storage. */
+let w16AlbumClose=null,w16DeepLinkOpened=false;
+function w16PhotoEntry(scope,label,subtitle){return `<section class="section"><button class="menu-btn w16-album-entry" data-w16-album="${scope}"><span class="menu-icon">${svg('camera')}</span><span class="menu-main"><span class="menu-title">${label}</span><span class="menu-sub">${subtitle}</span></span><span class="chev">›</span></button></section>`}
+const w16ProfileBase=profileView,w16SocialBase=socialView;
+profileView=function(){return w16ProfileBase().replace('</section>','</section>'+w16PhotoEntry('own','Mijn foto’s','Je activiteiten en bewijsfoto’s bij elkaar'))};
+socialView=function(){return w16SocialBase().replace('</section>','</section>'+w16PhotoEntry('friends','Foto’s van vrienden','Bekijk wat je vrienden hebben gedaan'))};
+async function w16OpenAlbum(initial='own'){
+ w16AlbumClose?.();const account=server.profile?.id;if(!account)return;
+ let scope=initial==='friends'?'friends':'own',items=[],hasMore=false,busy=false,sequence=0,closed=false;
+ const page=document.createElement('div');page.className='w16-album';page.setAttribute('role','dialog');page.setAttribute('aria-modal','true');page.setAttribute('aria-label','Activiteitenfoto’s');
+ page.innerHTML=`<header><button data-close aria-label="Sluiten">‹</button><div><small>ECHTE MOMENTEN</small><h1>Activiteiten in beeld</h1></div></header><nav aria-label="Fotoalbum"><button data-scope="own">Mijn foto’s</button><button data-scope="friends">Vrienden</button></nav><p class="w16-album-note"></p><div class="w16-photo-grid"></div><div class="w16-album-status" role="status"></div><button class="w16-more" hidden>Meer foto’s</button>`;
+ document.body.appendChild(page);w14Stage?.pause(true);
+ const close=()=>{closed=true;sequence++;page.remove();w16AlbumClose=null;if(view==='world')w14Stage?.pause(false)};w16AlbumClose=close;page.querySelector('[data-close]').onclick=close;
+ page.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+ const status=page.querySelector('.w16-album-status'),grid=page.querySelector('.w16-photo-grid');
+ const paint=()=>{
+  page.querySelectorAll('[data-scope]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scope===scope)));
+  page.querySelector('.w16-album-note').textContent=scope==='own'?'Jouw bewijsfoto’s blijven hier bewaard. Je deelinstellingen bepalen wat vrienden zien.':'Alleen foto’s die je huidige vrienden met jou delen.';
+  grid.innerHTML=items.map((x,i)=>`<article class="w16-photo"><button data-photo="${i}" aria-label="Bekijk foto: ${esc(x.title)}">${x.url?`<img src="${esc(x.url)}" alt="${esc(x.title)}" loading="lazy" decoding="async">`:'<span>Foto niet beschikbaar</span>'}</button><div><small>${esc(x.isOwn?'Jij':x.name)} · ${esc(new Date(x.createdAt).toLocaleDateString('nl-NL',{day:'numeric',month:'short'}))}</small><h2>${esc(x.title)}</h2></div></article>`).join('');
+  grid.querySelectorAll('[data-photo]').forEach(b=>b.onclick=()=>{const x=items[Number(b.dataset.photo)];if(!x.url)return;const full=document.createElement('div');full.className='w16-photo-full';full.innerHTML=`<button aria-label="Foto sluiten">×</button><img src="${esc(x.url)}" alt="${esc(x.title)}"><p>${esc(x.title)} · ${esc(x.name)}</p>`;page.appendChild(full);full.querySelector('button').onclick=()=>full.remove()});
+  grid.querySelectorAll('img').forEach(img=>img.onerror=()=>{img.replaceWith(document.createTextNode('Foto verlopen. Open dit album opnieuw.'))});
+  page.querySelector('.w16-more').hidden=!hasMore;
+ };
+ const load=async(reset=false)=>{if(busy&&!reset)return;const seq=++sequence;busy=true;if(reset){items=[];hasMore=false;paint()}status.textContent='Foto’s ophalen…';page.querySelector('.w16-more').disabled=true;
+  try{const result=await api('photo_gallery',{scope,offset:items.length});if(closed||seq!==sequence||account!==server.profile?.id)return;items.push(...result.items);hasMore=result.hasMore;paint();status.textContent=items.length?'':scope==='own'?'Je hebt nog geen activiteitenfoto’s. Voeg een foto toe wanneer je een activiteit afrondt.':'Er zijn nog geen gedeelde foto’s van je vrienden.'}
+  catch(e){if(!closed&&seq===sequence){status.textContent='Foto’s laden lukte niet. ';const retry=document.createElement('button');retry.textContent='Opnieuw proberen';retry.onclick=()=>load(items.length===0);status.appendChild(retry)}}
+  finally{if(seq===sequence){busy=false;page.querySelector('.w16-more').disabled=false}}
+ };
+ page.querySelectorAll('[data-scope]').forEach(b=>b.onclick=()=>{if(scope!==b.dataset.scope){scope=b.dataset.scope;void load(true)}});page.querySelector('.w16-more').onclick=()=>load();page.querySelector('[data-close]').focus();await load(true);
+}
+async function w16OpenProject(){
+ const engine=await w14Engine(),project=engine.constructionProgress(mw.data||{});
+ const wrap=openSheet(`<div class="sheet-top"><div><h2>Jouw bouwplaats</h2><p>Elke gelezen tekst brengt je verder.</p></div><button class="icon-btn" data-close>×</button></div>${project?`<div class="w16-project"><small>JE VOLGENDE KENNISBELONING</small><h3>${esc(project.name)}</h3><p>${project.count} van ${project.total} teksten gelezen</p><progress max="${project.total}" value="${project.count}"></progress><p>Op je eiland groeit alvast een bouwplaats. Zodra je het doel haalt, staat de beloning bij Items klaar om zelf te plaatsen.</p><button class="button primary" id="w16-read">Naar Kennis</button></div>`:'<div class="w16-project"><h3>Alle kennisgebouwen vrijgespeeld!</h3><p>Je beloningen vind je onder Items.</p><button class="button primary" id="w16-rewards">Bekijk Items</button></div>'}`);
+ wrap.querySelector('[data-close]').onclick=()=>wrap.remove();wrap.querySelector('#w16-read')?.addEventListener('click',()=>{wrap.remove();w14Stage?.pause(true);void w14Navigate('knowledge')});wrap.querySelector('#w16-rewards')?.addEventListener('click',()=>{wrap.remove();mwOpenItems()});
+}
+const w16BindBase=bind;
+bind=function(){w16BindBase();document.querySelectorAll('[data-w16-album]').forEach(b=>b.onclick=()=>w16OpenAlbum(b.dataset.w16Album));el('w16-project')?.addEventListener('click',w16OpenProject);
+ if(!w16DeepLinkOpened&&server.profile?.id&&new URLSearchParams(location.search).get('photos')==='friends'){w16DeepLinkOpened=true;setTimeout(()=>w16OpenAlbum('friends'),0)}
+};

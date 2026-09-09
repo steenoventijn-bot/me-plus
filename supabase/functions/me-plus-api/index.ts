@@ -1,3 +1,4 @@
+import {canSeePhoto} from './photo-policy.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 
 const url = Deno.env.get('SUPABASE_URL')!
@@ -220,11 +221,15 @@ Deno.serve(async req => {
       const path=`${me.id}/${crypto.randomUUID()}.${proof.ext}`
       const {error:up}=await db.storage.from('me-proof').upload(path,proof.bytes,{contentType:proof.mime,upsert:false}); if(up)throw up
       const metadata=body.metadata&&typeof body.metadata==='object'?body.metadata:{}
-      const {error:insertError}=await db.from('me_point_events').insert({user_id:me.id,event_key:eventKey,kind:'activity',title,points:1,metadata,proof_path:path,proof_mime:proof.mime,proof_hash:proofHash,local_date:localDate})
+      const {data:createdEvent,error:insertError}=await db.from('me_point_events').insert({user_id:me.id,event_key:eventKey,kind:'activity',title,points:1,metadata,proof_path:path,proof_mime:proof.mime,proof_hash:proofHash,local_date:localDate}).select('id').single()
       if(insertError){await db.storage.from('me-proof').remove([path]); if(insertError.code==='23505')return json({error:'Deze activiteit of foto is al gebruikt.'},409); throw insertError}
       const points=await recalcPoints(me.id)
       const friendIds=await acceptedFriendIds(me.id)
-      if(me.share_tasks){for(const id of friendIds)await addNotification(id,me.id,'activity',`${me.display_name} rondde “${title}” af.`,{title,points:1})}
+      if(me.share_tasks){for(const id of friendIds)await addNotification(id,me.id,'activity',`${me.display_name} rondde “${title}” af.${me.share_proof?' Bekijk de foto.':''}`,{title,points:1,eventId:createdEvent.id,pushStatus:me.share_proof?'pending':'private'})}
+      if(me.share_tasks&&me.share_proof&&friendIds.length){
+        const work=(async()=>{const {data:secret}=await db.from('me_server_config').select('value').eq('key','push_worker_secret').single();if(secret?.value){const response=await fetch(url+'/functions/v1/me-plus-push-worker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:secret.value,activity:true,eventId:createdEvent.id})});if(!response.ok)console.error('Activity push worker failed',response.status)}})().catch(e=>console.error('Activity push failed',e));
+        if(typeof EdgeRuntime!=='undefined')EdgeRuntime.waitUntil(work);else await work;
+      }
       return json({ok:true,duplicate:false,points,...rank(points)})
     }
 
@@ -240,6 +245,19 @@ Deno.serve(async req => {
       if(period==='all'){for(const p of ps||[])scores.set(p.id,p.points||0)} else {let q=db.from('me_point_events').select('user_id,points').in('user_id',ids); if(since)q=q.gte('created_at',since); const {data:ev}=await q; for(const e of ev||[])scores.set(e.user_id,(scores.get(e.user_id)||0)+Number(e.points||0))}
       const rows=(ps||[]).map((p:any)=>({...profileOut(p),score:scores.get(p.id)||0,isMe:p.id===me.id})).sort((a:any,b:any)=>b.score-a.score)
       return json({rows,period})
+    }
+
+    if(op==='photo_gallery'){
+      const scope=body.scope==='friends'?'friends':'own',offset=Math.max(0,Math.min(100000,Math.floor(Number(body.offset)||0))),limit=24;
+      const friends=scope==='friends'?await acceptedFriendIds(me.id):[];
+      const {data:authors,error:authorError}=scope==='own'?{data:[me],error:null}:friends.length?await db.from('me_profiles').select('id,display_name,share_tasks,share_proof').in('id',friends):{data:[],error:null};
+      if(authorError)throw authorError;
+      const allowed=(authors||[]).filter((p:any)=>canSeePhoto(me.id,p,friends));if(!allowed.length)return json({items:[],hasMore:false});
+      const {data:events,error}=await db.from('me_point_events').select('id,user_id,title,proof_path,created_at,local_date').eq('kind','activity').in('user_id',allowed.map((p:any)=>p.id)).not('proof_path','is',null).order('created_at',{ascending:false}).order('id',{ascending:false}).range(offset,offset+limit);
+      if(error)throw error;const rows=(events||[]).slice(0,limit);
+      const {data:urls,error:signError}=rows.length?await db.storage.from('me-proof').createSignedUrls(rows.map((e:any)=>e.proof_path),600):{data:[],error:null};if(signError)throw signError;
+      const signed=new Map((urls||[]).map((u:any)=>[u.path,u.signedUrl]));
+      return json({items:rows.map((e:any)=>({id:e.id,userId:e.user_id,title:e.title,name:allowed.find((p:any)=>p.id===e.user_id)?.display_name||'Vriend',createdAt:e.created_at,date:e.local_date,url:signed.get(e.proof_path)||null,isOwn:e.user_id===me.id})),hasMore:(events||[]).length>limit});
     }
 
     if (op === 'feed') {
