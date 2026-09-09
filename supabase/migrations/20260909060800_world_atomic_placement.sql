@@ -5,60 +5,61 @@ insert into public.me_world_catalog(item_key,category,name,price,rarity,max_owne
  ('house_main','building','Je huis',0,'common',1,'{"permanent":true}'),
  ('pond_garden','water','Tuinvijver',0,'common',1,'{}'),
  ('dock_wood','decor','Houten steiger',0,'common',1,'{}') on conflict(item_key) do nothing;
-with shapes(item_key,w,h) as (values
-('house_main',3.45,3.2),
-('pond_garden',3.1,2.5),
-('dock_wood',1.5,2.6),
-('activity_garden',0.32,0.32),
-('beach_chair',1.35,0.55),
-('bench_wood',1.35,0.55),
-('bookshelf_small',0.65,0.5),
-('bridge_wood',1.8,0.9),
-('bush_round',0.85,0.78),
-('campfire',0.95,0.95),
-('fence_white',1.3,0.23),
-('flowers_pink',0.85,0.62),
-('flowers_white',0.85,0.62),
-('fountain',1.4,1.4),
-('fountain_gold',1.4,1.4),
-('golden_duck',0.65,0.48),
-('growth_zone',1.8,1.6),
-('knowledge_house',2,1.7),
-('knowledge_library',2,1.7),
-('knowledge_stack',0.65,0.5),
-('knowledge_stand',1.8,1.6),
-('lamp_glow',0.32,0.32),
-('palm_tree',0.58,0.58),
-('parasols',0.85,0.78),
-('pond_lily',1.9,1.45),
-('pond_small',1.9,1.45),
-('pool_small',3.1,2.5),
-('rock_coast',0.7,0.7),
-('sign_meplus',0.32,0.32),
-('social_flag',0.32,0.32),
-('social_house',2,1.7),
-('streak_beach14',1.35,0.55),
-('streak_house60',2,1.7),
-('streak_legend100',0.65,0.65),
-('streak_lights30',0.32,0.32),
-('streak_palm7',0.58,0.58),
-('stream_stones',3.1,2.5),
-('training_house',1.8,1.6),
-('tree_level5',0.62,0.62),
-('tree_oak',0.62,0.62),
-('tree_streak7',0.7,0.7),
-('trophy_battle',0.65,0.65),
-('trophy_bronze',0.65,0.65),
-('trophy_champion',0.65,0.65),
-('trophy_gold',0.65,0.65),
-('trophy_silver',0.65,0.65),
-('tropical_bush',0.85,0.78),
-('waterfall_garden',3.1,2.5)
-) update public.me_world_catalog c set metadata=c.metadata||jsonb_build_object('footprint',jsonb_build_object('w',s.w,'h',s.h)) from shapes s where c.item_key=s.item_key;
+with shapes(item_key,w,h,ox,oy) as (values
+('house_main',3.45,3.5,0,0.35),
+('pond_garden',3.5,2.8,0,0),
+('dock_wood',1.5,2.6,0,0),
+('activity_garden',0.32,0.32,0,0),
+('beach_chair',0.76,0.98,0,0),
+('bench_wood',1.35,0.55,0,0),
+('bookshelf_small',0.65,0.5,0,0),
+('bridge_wood',1.8,0.9,0,0),
+('bush_round',0.85,0.78,0,0),
+('campfire',0.95,0.95,0,0),
+('fence_white',1.3,0.23,0,0),
+('flowers_pink',0.85,0.62,0,0),
+('flowers_white',0.85,0.62,0,0),
+('fountain',1.4,1.4,0,0),
+('fountain_gold',1.4,1.4,0,0),
+('golden_duck',0.65,0.48,0,0),
+('growth_zone',1.8,1.6,0,0),
+('knowledge_house',2,1.7,0,0),
+('knowledge_library',2,1.7,0,0),
+('knowledge_stack',0.65,0.5,0,0),
+('knowledge_stand',1.8,1.6,0,0),
+('lamp_glow',0.32,0.32,0,0),
+('palm_tree',0.58,0.58,0,0),
+('parasols',0.44,0.44,0,0),
+('pond_lily',1.9,1.45,0,0),
+('pond_small',1.9,1.45,0,0),
+('pool_small',2.7,2.1,0,0),
+('rock_coast',0.7,0.7,0,0),
+('sign_meplus',0.32,0.32,0,0),
+('social_flag',0.32,0.32,0,0),
+('social_house',2,1.7,0,0),
+('streak_beach14',1.35,0.55,0,0),
+('streak_house60',2,1.7,0,0),
+('streak_legend100',0.65,0.65,0,0),
+('streak_lights30',0.32,0.32,0,0),
+('streak_palm7',0.58,0.58,0,0),
+('stream_stones',2.8,0.95,0,0),
+('training_house',1.8,1.6,0,0),
+('tree_level5',0.62,0.62,0,0),
+('tree_oak',0.62,0.62,0,0),
+('tree_streak7',0.7,0.7,0,0),
+('trophy_battle',0.65,0.65,0,0),
+('trophy_bronze',0.65,0.65,0,0),
+('trophy_champion',0.65,0.65,0,0),
+('trophy_gold',0.65,0.65,0,0),
+('trophy_silver',0.65,0.65,0,0),
+('tropical_bush',0.85,0.78,0,0),
+('waterfall_garden',3.5,2.8,0,0)
+) update public.me_world_catalog c set metadata=c.metadata||jsonb_build_object('footprint',jsonb_build_object('w',s.w,'h',s.h,'ox',s.ox,'oy',s.oy)) from shapes s where c.item_key=s.item_key;
 
 create or replace function public.me_world_shape(p_key text,p_rotation integer default 0)
 returns double precision[] language sql stable set search_path='' as $$
- select case when p_rotation in (90,270) then array[coalesce((metadata->'footprint'->>'h')::float8,.7),coalesce((metadata->'footprint'->>'w')::float8,.7)] else array[coalesce((metadata->'footprint'->>'w')::float8,.7),coalesce((metadata->'footprint'->>'h')::float8,.7)] end from public.me_world_catalog where item_key=p_key
+ select case p_rotation when 90 then array[h,w,-oy,ox] when 180 then array[w,h,-ox,-oy] when 270 then array[h,w,oy,-ox] else array[w,h,ox,oy] end
+ from(select coalesce((metadata->'footprint'->>'w')::float8,.7)w,coalesce((metadata->'footprint'->>'h')::float8,.7)h,coalesce((metadata->'footprint'->>'ox')::float8,0)ox,coalesce((metadata->'footprint'->>'oy')::float8,0)oy from public.me_world_catalog where item_key=p_key)s
 $$;
 create or replace function public.me_world_land_distance(p_x double precision,p_y double precision)
 returns double precision language sql immutable set search_path='' as $$
@@ -74,12 +75,12 @@ begin
  max_land:=case when p_key='dock_wood' then 1.19 else .94 end;
  for i in 0..4 loop
    foreach point slice 1 in array array[array[(i/4.0-.5)*shape[1],-shape[2]/2],array[(i/4.0-.5)*shape[1],shape[2]/2],array[-shape[1]/2,(i/4.0-.5)*shape[2]],array[shape[1]/2,(i/4.0-.5)*shape[2]]] loop
-     if public.me_world_land_distance(p_x+point[1],p_y+point[2])>max_land then raise exception 'Plaats het hele object op het gras.';end if;
+     if public.me_world_land_distance(p_x+shape[3]+point[1],p_y+shape[4]+point[2])>max_land then raise exception 'Plaats het hele object op het gras.';end if;
    end loop;
  end loop;
  for row in select * from public.me_world_items where user_id=p_user_id and (p_exclude is null or id<>p_exclude) loop
   other:=public.me_world_shape(row.item_key,row.rotation);
-  if abs(coalesce(row.pos_x,row.grid_x)-p_x)<(shape[1]+other[1])/2-.005 and abs(coalesce(row.pos_y,row.grid_y)-p_y)<(shape[2]+other[2])/2-.005 then raise exception 'Er staat al een object op deze plek.';end if;
+  if abs(coalesce(row.pos_x,row.grid_x)+other[3]-p_x-shape[3])<(shape[1]+other[1])/2-.005 and abs(coalesce(row.pos_y,row.grid_y)+other[4]-p_y-shape[4])<(shape[2]+other[2])/2-.005 then raise exception 'Er staat al een object op deze plek.';end if;
  end loop;
 end $$;
 

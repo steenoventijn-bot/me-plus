@@ -5,13 +5,14 @@ insert into public.me_world_catalog(item_key,category,name,price,rarity,max_owne
  ('house_main','building','Je huis',0,'common',1,'{"permanent":true}'),
  ('pond_garden','water','Tuinvijver',0,'common',1,'{}'),
  ('dock_wood','decor','Houten steiger',0,'common',1,'{}') on conflict(item_key) do nothing;
-with shapes(item_key,w,h) as (values
+with shapes(item_key,w,h,ox,oy) as (values
 -- FOOTPRINT_VALUES
-) update public.me_world_catalog c set metadata=c.metadata||jsonb_build_object('footprint',jsonb_build_object('w',s.w,'h',s.h)) from shapes s where c.item_key=s.item_key;
+) update public.me_world_catalog c set metadata=c.metadata||jsonb_build_object('footprint',jsonb_build_object('w',s.w,'h',s.h,'ox',s.ox,'oy',s.oy)) from shapes s where c.item_key=s.item_key;
 
 create or replace function public.me_world_shape(p_key text,p_rotation integer default 0)
 returns double precision[] language sql stable set search_path='' as $$
- select case when p_rotation in (90,270) then array[coalesce((metadata->'footprint'->>'h')::float8,.7),coalesce((metadata->'footprint'->>'w')::float8,.7)] else array[coalesce((metadata->'footprint'->>'w')::float8,.7),coalesce((metadata->'footprint'->>'h')::float8,.7)] end from public.me_world_catalog where item_key=p_key
+ select case p_rotation when 90 then array[h,w,-oy,ox] when 180 then array[w,h,-ox,-oy] when 270 then array[h,w,oy,-ox] else array[w,h,ox,oy] end
+ from(select coalesce((metadata->'footprint'->>'w')::float8,.7)w,coalesce((metadata->'footprint'->>'h')::float8,.7)h,coalesce((metadata->'footprint'->>'ox')::float8,0)ox,coalesce((metadata->'footprint'->>'oy')::float8,0)oy from public.me_world_catalog where item_key=p_key)s
 $$;
 create or replace function public.me_world_land_distance(p_x double precision,p_y double precision)
 returns double precision language sql immutable set search_path='' as $$
@@ -27,12 +28,12 @@ begin
  max_land:=case when p_key='dock_wood' then 1.19 else .94 end;
  for i in 0..4 loop
    foreach point slice 1 in array array[array[(i/4.0-.5)*shape[1],-shape[2]/2],array[(i/4.0-.5)*shape[1],shape[2]/2],array[-shape[1]/2,(i/4.0-.5)*shape[2]],array[shape[1]/2,(i/4.0-.5)*shape[2]]] loop
-     if public.me_world_land_distance(p_x+point[1],p_y+point[2])>max_land then raise exception 'Plaats het hele object op het gras.';end if;
+     if public.me_world_land_distance(p_x+shape[3]+point[1],p_y+shape[4]+point[2])>max_land then raise exception 'Plaats het hele object op het gras.';end if;
    end loop;
  end loop;
  for row in select * from public.me_world_items where user_id=p_user_id and (p_exclude is null or id<>p_exclude) loop
   other:=public.me_world_shape(row.item_key,row.rotation);
-  if abs(coalesce(row.pos_x,row.grid_x)-p_x)<(shape[1]+other[1])/2-.005 and abs(coalesce(row.pos_y,row.grid_y)-p_y)<(shape[2]+other[2])/2-.005 then raise exception 'Er staat al een object op deze plek.';end if;
+  if abs(coalesce(row.pos_x,row.grid_x)+other[3]-p_x-shape[3])<(shape[1]+other[1])/2-.005 and abs(coalesce(row.pos_y,row.grid_y)+other[4]-p_y-shape[4])<(shape[2]+other[2])/2-.005 then raise exception 'Er staat al een object op deze plek.';end if;
  end loop;
 end $$;
 

@@ -123,7 +123,8 @@ function pond(b,large){
 }
 export function itemModel(key,house={}){
  if(key==='house_main')return houseModel(house);
- key=({flowers_white:'flowers_pink',tropical_bush:'bush_round',pond_lily:'pond_small',pool_small:'pond_garden',stream_stones:'pond_garden',waterfall_garden:'pond_garden',fountain_gold:'fountain',fence_white:'fence_wood',bookshelf_small:'knowledge_stack',knowledge_library:'knowledge_house',social_house:'knowledge_house',training_house:'growth_zone',streak_house60:'knowledge_house',knowledge_stand:'growth_zone',trophy_bronze:'trophy_battle',trophy_silver:'trophy_battle',trophy_gold:'trophy_battle',trophy_champion:'trophy_battle',streak_palm7:'palm_tree',streak_beach14:'bench_wood',streak_lights30:'lamp_glow',streak_legend100:'trophy_battle',beach_chair:'bench_wood',parasols:'bush_round',activity_garden:'social_flag',sign_meplus:'social_flag'})[key]||key;
+ const originalKey=key;
+ key=({flowers_white:'flowers_pink',tropical_bush:'bush_round',pond_lily:'pond_small',fountain_gold:'fountain',fence_white:'fence_wood',bookshelf_small:'knowledge_stack',knowledge_library:'knowledge_house',social_house:'knowledge_house',training_house:'growth_zone',streak_house60:'knowledge_house',knowledge_stand:'growth_zone',trophy_bronze:'trophy_battle',trophy_silver:'trophy_battle',trophy_gold:'trophy_battle',trophy_champion:'trophy_battle',streak_palm7:'palm_tree',streak_beach14:'bench_wood',streak_lights30:'lamp_glow',streak_legend100:'trophy_battle',activity_garden:'social_flag',sign_meplus:'social_flag'})[key]||key;
  const b=new Builder();
  if(/tree/.test(key))tree(b,key==='palm_tree',key.includes('streak'));
  else if(key==='pond_garden'||key==='pond_small')pond(b,key==='pond_garden');
@@ -131,6 +132,29 @@ export function itemModel(key,house={}){
   const long=key==='dock_wood'?2.6:1.7;for(let i=0;i<12;i++)b.box(i%3?'#b67a43':'#d39555',0,.13,-long/2+(i+.5)*long/12,1.42,.14,long/12-.016);
   for(const x of [-.63,.63])for(const z of [-long/2+.16,long/2-.16]){b.pole('#8c5c36',x,-.22,z,.09,1.3);b.pole('#e0c68e',x,.47,z,.115,.1)}
   for(const x of [-.54,.54])b.box('#825532',x,-.02,0,.12,.22,long);
+ }
+ else if(key==='beach_chair'){
+  for(const x of [-.33,.33]){b.pole('#d1ae79',x,.36,0,.026,.85,0,0,.24);b.pole('#bd9b69',x,.36,0,.026,.85,0,0,-.24)}
+  b.box('#f0e8cb',0,.46,.13,.7,.045,.65);b.box('#faf3de',0,.81,-.26,.7,.72,.055,-.28);for(const x of [-.22,0,.22])b.box('#6aa8a0',x,.81,-.22,.10,.72,.018,-.28);
+ }
+ else if(key==='parasols'){
+  b.pole('#c7a67a',0,.85,0,.027,1.7);b.pole('#d5c399',0,.05,0,.22,.1);
+  const g=new T.ConeGeometry(.65,.38,12);b.add(g,material('#efe3be'),0,1.85,0);g.dispose();
+  for(let i=0;i<6;i++){const a=i*Math.PI/3;b.pole('#91b8a0',Math.sin(a)*.27,1.86,Math.cos(a)*.27,.018,.7,Math.cos(a)*1.05,0,Math.sin(a)*1.05)}
+  b.ball('#ae8b5a',0,2.1,0,.04);
+ }
+ else if(key==='pool_small'){
+  b.box('#d9d4bc',0,.08,0,2.7,.16,2.1);b.box(material('#389ec3',.15,.25),0,.17,0,2.35,.04,1.76);
+  for(const x of [-1.22,1.22])b.box('#f4ebd2',x,.20,0,.19,.15,2);for(const z of [-.92,.92])b.box('#f4ebd2',0,.20,z,2.7,.15,.18);
+  for(const x of [-.33,.33])b.pole(material('#bfc9bf',.28,.6),x,.4,.68,.025,.5);for(const y of [.25,.4])b.box('#bfc9bf',0,y,.68,.68,.03,.04);
+ }
+ else if(key==='stream_stones'){
+  b.box(material('#48b9c5',.2,.2),0,.025,0,2.6,.035,.5);
+  for(let i=0;i<14;i++){const x=-1.25+i*.19;for(const z of [-.35,.35])b.ball('#c0bba6',x,.1,z+Math.sin(i)*.05,.12,.1,.12)}
+ }
+ else if(key==='waterfall_garden'){
+  pond(b,true);for(let i=0;i<9;i++)b.ball(i%2?'#b5b7a6':'#cbcab4',Math.sin(i*1.7)*.5,.3+i*.09,-.55,.4,.28,.3);
+  b.box(material('#9ae2dc',.16,.2,'#296d76'),0,.58,-.16,.43,.91,.045);b.ball('#d6f7e7',0,.15,-.10,.30,.04,.15);
  }
  else if(key==='flowers_pink')flowers(b,0,0,9);
  else if(key==='bush_round')bush(b,0,.22,0,1.12);
@@ -144,7 +168,7 @@ export function itemModel(key,house={}){
   for(const x of [-.14,.14])for(const z of [-.14,.14])b.pole('#253b3b',x,1.7,z,.018,.4);
   const geo=new T.ConeGeometry(.24,.2,4,1,false,Math.PI/4);b.add(geo,material('#233d3d'),0,1.97,0);geo.dispose();b.ball('#bda263',0,2.1,0,.04);
  }
- else if(key==='knowledge_house'||key==='growth_zone'){const g=houseModel({...houseDefaults,style:key==='knowledge_house'?'coastal':'modern',roof:key==='knowledge_house'?'purple':'green',decor:'hedge',chimney:'none'});g.scale.setScalar(.58);return g}
+ else if(key==='knowledge_house'||key==='growth_zone'){const g=houseModel({...houseDefaults,style:originalKey==='social_house'?'cottage':key==='knowledge_house'?'coastal':'modern',roof:originalKey==='social_house'?'red':originalKey==='streak_house60'?'gold':key==='knowledge_house'?'purple':'green',decor:'hedge',chimney:'none'});g.scale.setScalar(.58);return g}
  else if(key==='fountain'){
   b.pole('#c8c4ac',0,.16,0,.7,.32);b.pole(material('#57b7cb',.2,.3),0,.33,0,.57,.04);b.pole('#ded6b9',0,.6,0,.15,.6);b.add(new T.ConeGeometry(.37,.16,24),material('#ede2c4'),0,.89,0);b.ball(material('#a3e3e7',.16,.2),0,1.02,0,.12,.2,.12);
  }
