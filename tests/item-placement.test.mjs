@@ -17,8 +17,9 @@ test('item preview requires confirmation, rejects water, cancels safely and send
  let saves=0,release;
  const host={appendChild(){},getBoundingClientRect:canvas.getBoundingClientRect};
  const world=createWorld(host,{onDrop:()=>{saves++;return new Promise(resolve=>release=resolve)}});
+ for(const event of ['contextmenu','selectstart','dragstart']){let prevented=false;events.get(event)({preventDefault(){prevented=true}});assert.equal(prevented,true,event)}
  world.update({owner:{id:'own'},isOwner:true,world:{house:{}},items:[]});world.setEdit(true);frame(100);
- const tap=(x,y)=>{const p=world.project(x,y,.32),e={button:0,pointerId:1,clientX:p.x,clientY:p.y};events.get('pointerdown')(e);events.get('pointerup')(e)};
+ const tap=(x,y)=>{const p=world.project(x,y,.32),e={button:0,pointerId:1,clientX:p.x,clientY:p.y,preventDefault(){}};events.get('pointerdown')(e);events.get('pointerup')(e)};
  assert.equal(world.beginPlacement('bench_wood'),true);assert.equal(saves,0);
  tap(0,0);assert.equal(await world.commitPlacement(),false);assert.equal(saves,0);
  tap(9.5,10);assert.equal(saves,0);

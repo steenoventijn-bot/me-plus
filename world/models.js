@@ -186,7 +186,7 @@ export function itemModel(key,house={}){
   b.add(new T.ConeGeometry(.19,.63,7),material('#ffad47',.5,0,'#f88425'),0,.46,0);b.ball(material('#ffd17b',.4,0,'#ffc95d'),0,.28,0,.12,.2,.12);
  }
  else if(key==='trophy_battle'){
-  const gold=material('#dfb245',.3,.65);b.box('#655940',0,.12,0,.55,.24,.55);b.pole(gold,0,.42,0,.09,.38);b.add(new T.CylinderGeometry(.27,.1,.35,16),gold,0,.72,0);for(const s of [-1,1])b.add(new T.TorusGeometry(.16,.028,6,16),gold,s*.26,.73,0);b.ball(gold,0,.97,0,.055);
+  const gold=material(({trophy_bronze:'#b97943',trophy_battle:'#b97943',trophy_silver:'#c1cedb',trophy_gold:'#efc44b',trophy_champion:'#efc44b'})[originalKey]||'#dfb245',.26,.75);b.box('#655940',0,.12,0,.55,.24,.55);b.pole(gold,0,.42,0,.09,.38);b.add(new T.CylinderGeometry(.27,.1,.35,16),gold,0,.72,0);for(const s of [-1,1])b.add(new T.TorusGeometry(.16,.028,6,16),gold,s*.26,.73,0);b.ball(gold,0,.97,0,.055);
  }
  else if(key==='social_flag'){b.pole('#977453',0,.72,0,.035,1.45);b.box('#f49d60',.26,1.18,0,.51,.38,.026);b.pole('#b3aa89',0,.055,0,.16,.11)}
  else if(key==='knowledge_stack'){for(let i=0;i<4;i++){b.box(['#609999','#d4b055','#9b729d','#cd8461'][i],0,.08+i*.105,0,.61,.08,.43,0,i%2*.1);b.box('#f6eacf',0,.086+i*.105,.017,.55,.04,.41)}}

@@ -21,3 +21,8 @@
 
 /* The grip owns the drag gesture; the card text remains available for native scrolling. */
 .w14-item-grab{position:relative;padding-right:49px;user-select:none;-webkit-touch-callout:none}.w14-drag-handle{position:absolute;right:0;top:0;bottom:0;width:44px;display:grid;place-items:center;touch-action:none;font-size:25px!important;color:#759486;border-left:1px solid #edf1e9;cursor:grab}
+
+/* Island gestures belong to the game, not text selection or iOS callouts. */
+.w14-world,.w14-world *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.w14-world input,.w14-world textarea{-webkit-user-select:text;user-select:text}
+.w14-canvas{-webkit-user-drag:none}
