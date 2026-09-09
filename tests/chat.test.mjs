@@ -2,17 +2,30 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+class Row {
+ constructor(message={}){this.message=message;this.children=[];this.style={};this.value='';this.scrollHeight=500;this.scrollTop=0;this.clientHeight=200;this.selectionStart=0;this.selectionEnd=0;this.dataset={v10Msg:message.id};this.image=message.mediaUrl?new Row():null}
+ get firstElementChild(){return this.children[0]||null}
+ get nextElementSibling(){return this.parent?.children[this.parent.children.indexOf(this)+1]||null}
+ get isConnected(){return !!this.parent}
+ insertBefore(node,next){node.remove();const i=next?this.children.indexOf(next):this.children.length;this.children.splice(i,0,node);node.parent=this}
+ remove(){if(this.parent){const a=this.parent.children;a.splice(a.indexOf(this),1);this.parent=null}}
+ replaceWith(node){const parent=this.parent;if(parent){parent.insertBefore(node,this);this.remove()}}
+ querySelector(q){return q==='img'?this.image:null}
+ querySelectorAll(){return []}
+ addEventListener(e,fn){this['on'+e]=fn}
+ getBoundingClientRect(){return {top:0,bottom:100}}
+}
 function chat(){
  const source=fs.readFileSync('parts/v10-social-2.txt','utf8');
- let page,poll,handler=async()=>({friend:{name:'Friend'},messages:[]}),viewportListeners=new Set();
+ let page,poll,handler=async()=>({friend:{name:'Friend'},messages:[]}),viewportListeners=new Map();
  const doc={activeElement:null,hidden:false,body:{appendChild(p){page=p;p.isConnected=true},classList:{add(){},remove(){}}},getElementById:()=>page?.isConnected?page:null,createElement(){
   const elements=new Map();
-  return {isConnected:false,style:{},set innerHTML(value){elements.clear();doc.activeElement=null},querySelector(key){if(!elements.has(key))elements.set(key,{value:'',style:{},scrollHeight:500,scrollTop:0,clientHeight:200,selectionStart:0,selectionEnd:0,addEventListener(event,fn){this['on'+event]=fn},focus(){doc.activeElement=this}});return elements.get(key)},querySelectorAll:()=>[],remove(){this.isConnected=false}};
+  return {isConnected:false,style:{},set innerHTML(value){if(value.startsWith('{')){this.firstElementChild=new Row(JSON.parse(value));return}elements.clear();doc.activeElement=null},querySelector(key){if(!elements.has(key)){const node=new Row();node.focus=()=>doc.activeElement=node;elements.set(key,node)}return elements.get(key)},querySelectorAll:()=>[],remove(){this.isConnected=false}};
  }};
- const context={document:doc,window:{visualViewport:{height:600,offsetTop:0,scale:1,addEventListener(e,f){viewportListeners.add(f)},removeEventListener(e,f){viewportListeners.delete(f)}}},server:{v10:{},profile:{id:'me'}},api10:(...args)=>handler(...args),v10ChatTimer:null,v10ReplyTo:null,v10HoldTimer:null,clearInterval(){},setInterval(fn){poll=fn;return 1},clearTimeout(){},setTimeout(){},v10Avatar:()=>'',esc:x=>x,v10MessageHtml:m=>m.id+':'+m.body,toast(){},v10MessageActions(){},v10OpenFriendProfile(){},v10OpenBattleSetup(){},v10OpenBattle(){}};
+ const context={document:doc,window:{visualViewport:{height:600,offsetTop:0,scale:1,addEventListener(e,f){viewportListeners.set(e,f)},removeEventListener(e,f){viewportListeners.delete(e)}}},server:{v10:{},profile:{id:'me'}},api10:(...args)=>handler(...args),v10ChatTimer:null,v10ReplyTo:null,v10HoldTimer:null,clearInterval(){},setInterval(fn){poll=fn;return 1},clearTimeout(){},setTimeout(){},v10Avatar:()=>'',esc:x=>x,v10MessageHtml:m=>JSON.stringify(m),toast(){},v10MessageActions(){},v10OpenFriendProfile(){},v10OpenBattleSetup(){},v10OpenBattle(){}};
  vm.createContext(context);
- vm.runInContext(source.slice(source.indexOf('let v142ChatOpen='),source.indexOf('function v10MessageActions'))+'\n'+source.slice(source.indexOf('function v10CloseChat'),source.indexOf('\n\nfunction profileView')),context);
- return {context,doc,open:()=>context.v10OpenChat('friend','Friend'),close:()=>context.v10CloseChat(),api:fn=>handler=fn,poll:()=>poll(),input:()=>page.querySelector('#v10-chat-text'),send:()=>page.querySelector('#v10-chat-send'),page:()=>page,listeners:()=>viewportListeners.size};
+ vm.runInContext(source.slice(source.indexOf('function v142SyncChatRows'),source.indexOf('function v10MessageActions'))+'\n'+source.slice(source.indexOf('function v10CloseChat'),source.indexOf('\n\nfunction profileView')),context);
+ return {context,doc,open:()=>context.v10OpenChat('friend','Friend'),close:()=>context.v10CloseChat(),api:fn=>handler=fn,poll:()=>poll(),input:()=>page.querySelector('#v10-chat-text'),send:()=>page.querySelector('#v10-chat-send'),page:()=>page,listeners:()=>viewportListeners.size,viewport:(event)=>viewportListeners.get(event)()};
 }
 test('incoming messages preserve the same focused composer, draft, cursor and reading position',async()=>{
  const c=chat();await c.open();const input=c.input(),stream=c.page().querySelector('#v10-chat-stream');input.value='Nog aan het typen';input.selectionStart=4;input.focus();stream.scrollTop=20;
@@ -31,4 +44,18 @@ test('send is single-flight and preserves text typed while waiting; stale polls 
 test('failed sends retain the draft and late responses do not alter a closed conversation',async()=>{
  const c=chat();await c.open();c.input().value='Bewaar mij';c.api(async()=>{throw Error('offline')});await c.send().onclick();assert.equal(c.input().value,'Bewaar mij');assert.equal(c.send().disabled,false);
  let finish;c.api(()=>new Promise(r=>finish=r));const poll=c.poll();c.close();finish({friend:{},messages:[{id:'late'}]});await poll;assert.equal(c.context.server.v10.chatMessages.length,0);
+});
+
+test('renewed signed photo URLs leave message nodes and scroll position untouched across repeated polls',async()=>{
+ const c=chat();let token=0;c.api(async()=>({friend:{},messages:[{id:'photo',body:'Foto',media_path:'same/photo.jpg',mediaUrl:'https://storage/photo?token='+token++}]}));await c.open();
+ const box=c.page().querySelector('#v10-chat-stream'),row=box.firstElementChild;box.scrollTop=37;
+ for(let i=0;i<5;i++)await c.poll();
+ assert.equal(box.firstElementChild,row);assert.equal(box.scrollTop,37);assert.equal(box.children.length,1);
+});
+test('appending a message preserves previous nodes and viewport scrolling cannot force the conversation down',async()=>{
+ const c=chat();c.api(async()=>({friend:{},messages:[{id:'one',body:'First'}]}));await c.open();
+ const box=c.page().querySelector('#v10-chat-stream'),row=box.firstElementChild;box.scrollTop=280;
+ c.api(async()=>({friend:{},messages:[{id:'one',body:'First'},{id:'two',body:'New'}]}));await c.poll();assert.equal(box.firstElementChild,row);assert.equal(box.children.length,2);
+ box.scrollTop=280;c.context.window.visualViewport.offsetTop=10;c.viewport('scroll');assert.equal(box.scrollTop,280);
+ c.viewport('resize');assert.equal(box.scrollTop,280);
 });

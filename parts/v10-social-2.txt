@@ -10,6 +10,29 @@ async function v10OpenFriendProfile(id){let r;try{r=await api10('friend_profile'
 
 function v10MsgTime(s){return new Intl.DateTimeFormat('nl-NL',{hour:'2-digit',minute:'2-digit'}).format(new Date(s))}
 function v10MessageHtml(m,friend){const me=m.sender_id===server.profile?.id,reply=m.reply_to_id?server.v10.chatMessages.find(x=>x.id===m.reply_to_id):null,reacts=(m.reactions||[]).map(x=>x.emoji).join(' ');if(m.message_type==='battle'&&m.battle_id)return `<div class="v10-chat-row ${me?'me':''}" data-v10-msg="${m.id}"><div class="v10-battle-chat"><span>⚔️ BATTLE</span><b>${esc(m.body)}</b><button data-v10-battle="${m.battle_id}">Bekijk battle</button></div></div>`;return `<div class="v10-chat-row ${me?'me':''}" data-v10-msg="${m.id}"><div class="v10-bubble">${reply?`<div class="v10-reply-preview">${esc(reply.body||'Bericht')}</div>`:''}${m.mediaUrl?`<img src="${esc(m.mediaUrl)}" alt="Chatfoto">`:''}${m.message_type!=='photo'||m.body!=='Foto'?`<p>${esc(m.body)}</p>`:''}<div class="v10-msg-meta"><span>${v10MsgTime(m.created_at)}</span>${me?`<span>${m.read_at?'Gelezen':'Verstuurd'}</span>`:''}</div>${reacts?`<div class="v10-reactions">${reacts}</div>`:''}</div></div>`}
+// Keep message and image nodes alive across polling, including renewed signed photo URLs.
+function v142SyncChatRows(box,rows,messages,makeRow,bindRow){
+ const wanted=new Set(messages.map(m=>m.id));let changed=false;
+ for(const [id,entry] of rows){if(!wanted.has(id)){entry.node.remove();rows.delete(id);changed=true}}
+ let previous=null;
+ for(const m of messages){
+  const media=m.media_path||(m.mediaUrl||'').split('?')[0];
+  const reply=messages.find(x=>x.id===m.reply_to_id);
+  const key=JSON.stringify([m.body,m.message_type,m.battle_id,m.reply_to_id,reply?.body,media,!!m.read_at,m.reactions||[]]);
+  let entry=rows.get(m.id);
+  if(!entry||entry.key!==key){
+   const node=makeRow(m),oldImage=entry?.node.querySelector('img'),newImage=node.querySelector('img');
+   if(oldImage&&newImage&&entry.media===media)newImage.replaceWith(oldImage);
+   if(entry)entry.node.replaceWith(node);
+   entry={node,key,media};rows.set(m.id,entry);bindRow(node);changed=true;
+  }
+  const next=previous?previous.nextElementSibling:box.firstElementChild;
+  if(next!==entry.node){box.insertBefore(entry.node,next);changed=true}
+  previous=entry.node;
+ }
+ return changed;
+}
+
 let v142ChatOpen=0,v142ChatCleanup=null;
 async function v10OpenChat(id,name){
  v10CloseChat();const ticket=++v142ChatOpen;
@@ -21,21 +44,23 @@ async function v10OpenChat(id,name){
  page.innerHTML=`<div class="v10-chat-head"><button data-close aria-label="Gesprek sluiten">‹</button>${v10Avatar(f,'xs')}<div><b>${esc(f?.name||name)}</b><span>Berichten</span></div><button data-v10-profile="${id}" aria-label="Profiel bekijken">···</button></div><div class="v10-chat-stream" id="v10-chat-stream" role="log" aria-label="Gesprek"></div><div id="v142-chat-reply"></div><div class="v10-chat-compose"><button id="v10-chat-plus" aria-label="Vriend uitdagen">＋</button><button id="v10-chat-photo" aria-label="Foto toevoegen">▧</button><textarea id="v10-chat-text" rows="1" maxlength="1200" placeholder="Bericht…" aria-label="Je bericht" enterkeyhint="send"></textarea><button id="v10-chat-emoji" aria-label="Emoji toevoegen">☺</button><button id="v10-chat-send" aria-label="Bericht versturen">➤</button><input id="v10-chat-file" type="file" accept="image/jpeg,image/png,image/webp" hidden></div>`;
  document.body.appendChild(page);document.body.classList.add('v10-modal-open');
  const input=page.querySelector('#v10-chat-text'),box=page.querySelector('#v10-chat-stream'),btn=page.querySelector('#v10-chat-send');
- let sending=false,polling=false,revision=0,lastHTML=null;
+ let sending=false,polling=false,revision=0;const rows=new Map();
  const alive=()=>ticket===v142ChatOpen&&page.isConnected;
  const fit=()=>{input.style.height='auto';input.style.height=Math.min(120,input.scrollHeight)+'px'};
  const renderChat=(bottom=false)=>{
   if(!alive())return;
-  const nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<100,scroll=box.scrollTop;
-  const html=server.v10.chatMessages.map(m=>v10MessageHtml(m,server.v10.chatFriend)).join('');
-  if(html!==lastHTML){box.innerHTML=html;lastHTML=html;
-   page.querySelectorAll('[data-v10-battle]').forEach(b=>b.onclick=e=>{e.stopPropagation();v10OpenBattle(b.dataset.v10Battle)});
-   page.querySelectorAll('[data-v10-msg]').forEach(row=>{
-    const start=()=>{clearTimeout(v10HoldTimer);v10HoldTimer=setTimeout(()=>v10MessageActions(row.dataset.v10Msg,()=>{revision++;renderChat();if(v10ReplyTo)input.focus({preventScroll:true})}),520)},cancel=()=>clearTimeout(v10HoldTimer);
-    row.addEventListener('pointerdown',start);['pointerup','pointercancel','pointerleave','touchmove'].forEach(event=>row.addEventListener(event,cancel,{passive:true}));
-   });
-   box.scrollTop=bottom||nearBottom?box.scrollHeight:scroll;
-  }else if(bottom)box.scrollTop=box.scrollHeight;
+  const nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<32,scroll=box.scrollTop;
+  const anchor=[...rows.values()].map(x=>x.node).find(node=>node.getBoundingClientRect().bottom>box.getBoundingClientRect().top);
+  const anchorTop=anchor?.getBoundingClientRect().top;
+  const changed=v142SyncChatRows(box,rows,server.v10.chatMessages,m=>{
+   const holder=document.createElement('div');holder.innerHTML=v10MessageHtml(m,server.v10.chatFriend);return holder.firstElementChild;
+  },row=>{
+   row.querySelectorAll('[data-v10-battle]').forEach(b=>b.onclick=e=>{e.stopPropagation();v10OpenBattle(b.dataset.v10Battle)});
+   const start=()=>{clearTimeout(v10HoldTimer);v10HoldTimer=setTimeout(()=>v10MessageActions(row.dataset.v10Msg,()=>{revision++;renderChat();if(v10ReplyTo)input.focus({preventScroll:true})}),520)},cancel=()=>clearTimeout(v10HoldTimer);
+   row.addEventListener('pointerdown',start);['pointerup','pointercancel','pointerleave','touchmove'].forEach(event=>row.addEventListener(event,cancel,{passive:true}));
+  });
+  if(bottom||(changed&&nearBottom))box.scrollTop=box.scrollHeight;
+  else if(changed)box.scrollTop=anchor?.isConnected?scroll+anchor.getBoundingClientRect().top-anchorTop:scroll;
   page.querySelector('#v142-chat-reply').innerHTML=v10ReplyTo?`<div class="v10-replying"><span>Antwoord op: ${esc(v10ReplyTo.body||'bericht')}</span><button id="v10-cancel-reply" aria-label="Antwoord annuleren">×</button></div>`:'';
   page.querySelector('#v10-cancel-reply')?.addEventListener('click',()=>{v10ReplyTo=null;renderChat()});
  };
@@ -61,7 +86,18 @@ async function v10OpenChat(id,name){
  page.querySelector('#v10-chat-emoji').onclick=()=>{input.setRangeText(' 🔥',input.selectionStart,input.selectionEnd,'end');fit();input.focus({preventScroll:true})};
  page.querySelector('#v10-chat-file').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file)return;if(file.size>6*1024*1024)return toast('Foto is groter dan 6 MB.');try{const data=await fileData(file);if(alive())await send(data)}catch(e){if(alive())toast(e.message)}};
  const viewport=window.visualViewport;
- const resize=()=>{if(!alive()||!viewport||Math.abs(viewport.scale-1)>.05)return;const bottom=box.scrollHeight-box.scrollTop-box.clientHeight<100;page.style.height=viewport.height+'px';page.style.top=viewport.offsetTop+'px';if(bottom)box.scrollTop=box.scrollHeight};
+ let viewportHeight=null,viewportTop=null;
+ const resize=()=>{
+  if(!alive()||!viewport||Math.abs(viewport.scale-1)>.05)return;
+  const height=Math.round(viewport.height),top=Math.round(viewport.offsetTop);
+  if(height===viewportHeight&&top===viewportTop)return;
+  const heightChanged=height!==viewportHeight,atBottom=box.scrollHeight-box.scrollTop-box.clientHeight<32,scroll=box.scrollTop;
+  if(heightChanged)page.style.height=height+'px';
+  if(top!==viewportTop)page.style.top=top+'px';
+  viewportHeight=height;viewportTop=top;
+  // A viewport scroll must never scroll the conversation. Only adapt to a real resize.
+  if(heightChanged)box.scrollTop=atBottom?box.scrollHeight:scroll;
+ };
  viewport?.addEventListener('resize',resize);viewport?.addEventListener('scroll',resize);
  v142ChatCleanup=()=>{viewport?.removeEventListener('resize',resize);viewport?.removeEventListener('scroll',resize);clearTimeout(v10HoldTimer)};
  renderChat(true);resize();

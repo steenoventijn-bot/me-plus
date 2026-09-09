@@ -52,3 +52,7 @@ html[data-accent] .button.primary,.quick-add-v8{background:linear-gradient(135de
 .v142-battle-help{padding:16px;margin:14px 0;border:1px solid var(--line);border-radius:18px;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.55;text-align:left}
 .v142-battle-help h2{font-size:17px;margin:0 0 8px}.v142-battle-help p{margin:8px 0}.v142-battle-help ol{padding-left:22px;margin:12px 0}.v142-battle-help li{padding-left:3px;margin:9px 0}.v142-battle-help summary{cursor:pointer;font-weight:700;padding:8px 0}.v142-start-note{font-size:14px;line-height:1.5;color:var(--muted)}
 .v10-custom-fields label{display:grid;gap:6px;font-size:13px}.v10-custom-fields input{font-size:16px}
+
+/* Reserve photo space before decoding so loading never moves surrounding messages. */
+.v10-bubble img{width:240px;max-width:100%;height:180px;object-fit:contain;background:var(--soft)}
+.v10-chat-stream{scroll-behavior:auto}
