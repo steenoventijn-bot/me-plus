@@ -29,3 +29,18 @@ mwOpenHouse=async function(){if(!mw.data?.isOwner)return;const owner=w14Own(),or
 
 const w14BindPrevious=bind;
 bind=function(){w14BindPrevious();const world=document.querySelector('[data-nav="world"]');if(world)world.onclick=()=>mwVisitWorld(w14Own());document.querySelectorAll('[data-nav]').forEach(b=>{if(b.dataset.nav!=='world')b.addEventListener('click',()=>{w14LoadSequence++;mw.loading=false;w14Stage?.pause(true)})})};
+
+// Navigation paints cached account data immediately; server refresh never blocks the tap.
+let w14NavigationSequence=0;
+const w14NavRequests=new Map(),w14NavFresh=new Map();
+function w14Navigate(target,filter){
+ const seq=++w14NavigationSequence,account=server.profile?.id;
+ view=target;if(filter)knowledgeFilter=filter;
+ render();
+ if(target!=='profile'&&target!=='social')return Promise.resolve();
+ const key=account+':'+target;
+ if(Date.now()-(w14NavFresh.get(key)||0)<30000)return Promise.resolve();
+ let request=w14NavRequests.get(key);
+ if(!request){request=Promise.resolve().then(()=>target==='profile'?refreshBase():loadSocial('people')).then(()=>{w14NavFresh.set(key,Date.now())}).finally(()=>{w14NavRequests.delete(key)});w14NavRequests.set(key,request)}
+ return request.then(()=>{if(seq===w14NavigationSequence&&view===target&&server.profile?.id===account){const y=window.scrollY||0;render();window.scrollTo(0,y)}}).catch(e=>console.warn('navigation refresh',e));
+}
