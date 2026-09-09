@@ -1,6 +1,6 @@
 # Me+ world and reading update
 
-This branch keeps the existing app, GitHub Pages address and Supabase account system. It replaces the broken raster world with a lazy-loaded Three.js scene, a persistent camera and an editable 3D house. The house, garden pond and dock become ordinary stored objects. Existing placed items retain their IDs and coordinates. The first placement implementation now commits precise coordinates and inventory consumption in one database transaction. Empty worlds are not seeded repeatedly.
+This branch keeps the existing app, GitHub Pages address and Supabase account system. It replaces the broken raster world with a lazy-loaded Three.js scene, a persistent camera and an editable 3D house. The house, garden pond and dock become ordinary stored objects. Existing placed items retain their IDs and coordinates. Added house/pond/dock features use their default location or the nearest valid free position; a full island aborts the migration instead of overwriting objects. The first placement implementation now commits precise coordinates and inventory consumption in one database transaction. Empty worlds are not seeded repeatedly.
 
 Avatar refresh uses the full profile endpoint. Partial account responses merge into the current account; another account's response cannot replace it. All ten avatar choices remain supported. Hair layering and scalp coverage were checked in a rendered contact sheet. The homescreen icon is a simple Me+ wordmark; launch uses the same branding.
 
@@ -10,7 +10,7 @@ Every current article has one reviewed four-option question. The server records 
 
 - `npm test`: loader/account races, all avatar layers, empty-land placement, rotated footprints, model construction and house option changes, and reading/quiz data checks.
 - `npm run build`: produces `dist/` with public assets only. Backend source, answer keys, tests and dependencies are excluded.
-- The `Me+ checks` workflow uses an isolated PostgreSQL 17 service. It applies the proposed migration and tests stock rollback, ownership, empty layouts, reading eligibility, wrong answers, repeated answers and cross-session duplicate rewards.
+- The `Me+ checks` workflow passed on commit `3b35b08`. It uses an isolated PostgreSQL 17 service. It applies the proposed migration and tests stock rollback, ownership, empty layouts, reading eligibility, wrong answers, repeated answers and cross-session duplicate rewards.
 - Local browser preview infrastructure was unavailable. The new WebGL scene has **not** passed a browser screenshot comparison, real-phone FPS testing, or an authenticated end-to-end round trip. Keep this PR a draft until those gates are complete. A successful JavaScript build alone is not proof of visual parity with the supplied reference.
 - The old rarer object catalog is preserved. Some related reward objects currently share a base 3D model; individual asset art still needs visual review.
 
