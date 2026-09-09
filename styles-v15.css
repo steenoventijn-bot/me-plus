@@ -8,3 +8,13 @@
 #w15-confirm{background:#d9f1ce;color:#245539;font-size:12px;min-width:85px}#w15-cancel{font-size:11px}.w15-panel button:focus-visible,.w15-panel input:focus-visible{outline:3px solid #dba84b;outline-offset:2px}
 @media(min-width:650px){.w15-browser{align-items:center;padding:24px}.w15-panel{max-height:85dvh}.w15-grid{grid-template-columns:repeat(3,minmax(0,1fr));padding:1px 22px 22px}.w15-panel h2{font-size:28px}.w15-card h3{font-size:14px}.w15-owner-tools>button{font-size:12px}}
 @media(max-width:360px){.w15-grid{gap:8px;padding:1px 10px 12px}.w15-card-copy{padding:9px}.w15-panel h2{font-size:21px}.w15-search{gap:6px;margin-left:14px;margin-right:14px}.w15-search>span{padding:8px;font-size:10px}.w14-dock{gap:5px;padding:7px}.w14-dock button{padding:8px}}
+/* A bounded flex scroller keeps every card at its natural height. Grid rows inside
+   the old shrinking flex panel could collapse and clip names and action buttons. */
+.w15-panel{height:min(780px,88dvh);max-height:none;min-height:0}
+.w15-panel>header,.w15-panel>p,.w15-panel>.w15-search,.w15-panel>.w15-filters,.w15-panel>footer{flex:0 0 auto}
+.w15-grid{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;gap:10px;align-items:stretch;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.w15-card{display:grid;grid-template-columns:96px minmax(0,1fr);flex:0 0 auto;min-height:150px;overflow:visible;border-radius:16px}
+.w15-picture{width:96px;height:110px;aspect-ratio:auto;align-self:center;border-radius:12px;margin-left:8px;overflow:hidden;pointer-events:none}
+.w15-picture img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.w15-card-copy{min-width:0;padding:14px 12px 14px 18px}.w15-card h3{min-height:0;font-size:14px;overflow-wrap:anywhere;margin:4px 0 5px}.w15-card p{font-size:11px;margin-bottom:5px}.w15-price{display:block;color:#8b6929;font-weight:650;font-size:12px;margin:7px 0 10px}.w15-card button{min-height:44px;font-size:12px;touch-action:manipulation;cursor:pointer}.w15-card button:disabled{cursor:default}.w15-unavailable{min-height:30px;font-size:11px}.w15-empty{flex:0 0 auto}
+@media(min-width:650px){.w15-panel{height:min(820px,85dvh)}.w15-card{grid-template-columns:132px minmax(0,1fr)}.w15-picture{width:124px;height:120px}.w15-card-copy{padding:15px 20px}.w15-card button{max-width:280px}}

@@ -111,7 +111,7 @@ function tree(b,palm=false,special=false){
  if(palm){for(let i=0;i<9;i++){const a=i*6.283/9;for(let j=0;j<5;j++){const d=(j+.5)*.25;b.ball(j%2?'#609d38':'#397c39',Math.sin(a)*d,2.25+.3*Math.sin(j*.7)-j*.055,Math.cos(a)*d,.27,.07,.22)}}return}
  const cs=special?['#38874c','#52a04e','#8ec851','#b9d26b']:['#357f2e','#569d2c','#79b62f','#add447'];
  for(let i=0;i<140;i++){const a=rng()*6.283,z=rng()*2-1,r=Math.sqrt(1-z*z),rad=Math.cbrt(rng());const x=r*Math.cos(a)*1.1*rad,y=2.24+z*.94*rad,zz=r*Math.sin(a)*1.03*rad;
-  b.ball(cs[Math.min(3,Math.max(0,Math.floor((y-1.4)*1.7+rng())))],x,y,zz,.24+rng()*.11,.16+rng()*.06,.2+rng()*.1);
+  b.ball(cs[Math.min(3,Math.max(0,Math.floor((y-1.4)*1.7+rng())))],x,y,zz,.24+rng()*.11,.16+rng()*.06,.2+rng()*.1,true);
  }
  for(let i=0;i<6;i++){const a=i*1.05;b.pole('#80502b',Math.sin(a)*.14,.08,Math.cos(a)*.14,.07,.42,Math.cos(a)*.9,0,Math.sin(a)*.9)}
 }
