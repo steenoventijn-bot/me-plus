@@ -31,35 +31,45 @@ async function sendBroadcast(body:any){
 
 
 async function sendActivityPhotos(eventId:string|null){
+ const stale=new Date(Date.now()-5*60000).toISOString();
+ const {data:stuck}=await db.from('me_notifications').select('id,data').eq('type','activity').eq('data->>pushStatus','sending').lt('data->>pushClaimedAt',stale).limit(50);
+ for(const note of stuck||[])await db.from('me_notifications').update({data:{...note.data,pushStatus:Number(note.data.pushAttempts||0)<3?'pending':'failed'}}).eq('id',note.id).eq('data->>pushStatus','sending').eq('data->>pushClaimedAt',note.data.pushClaimedAt);
+
  let query=db.from('me_notifications').select('id,user_id,actor_id,data,created_at').eq('type','activity').eq('data->>pushStatus','pending').gte('created_at',new Date(Date.now()-86400000).toISOString()).order('created_at').limit(50);
  if(eventId)query=query.eq('data->>eventId',eventId);
  const {data:notes,error}=await query;if(error)throw error;
  let sent=0,skipped=0,failed=0;
  for(const n of notes||[]){
-  const {data:claim,error:claimError}=await db.from('me_notifications').update({data:{...n.data,pushStatus:'sending'}}).eq('id',n.id).eq('data->>pushStatus','pending').select('id').maybeSingle();
+  const delivery={...n.data,pushAttempts:Number(n.data.pushAttempts||0)+1,pushClaimedAt:new Date().toISOString(),deliveredSubscriptions:n.data.deliveredSubscriptions||[]};
+  const {data:claim,error:claimError}=await db.from('me_notifications').update({data:{...delivery,pushStatus:'sending'}}).eq('id',n.id).eq('data->>pushStatus','pending').select('id').maybeSingle();
   if(claimError)throw claimError;if(!claim)continue;
   let status='skipped';
   try{
    const [{data:event},{data:author},{data:recipient},{data:relations}]=await Promise.all([
     db.from('me_point_events').select('id,user_id,proof_path,kind').eq('id',n.data.eventId).maybeSingle(),
-    db.from('me_profiles').select('id,share_tasks,share_proof').eq('id',n.actor_id).maybeSingle(),
+    db.from('me_profiles').select('id,display_name,share_tasks,share_proof').eq('id',n.actor_id).maybeSingle(),
     db.from('me_profiles').select('notifications_enabled').eq('id',n.user_id).maybeSingle(),
     db.from('me_follows').select('follower_id').eq('status','accepted').or(`and(follower_id.eq.${n.actor_id},following_id.eq.${n.user_id}),and(follower_id.eq.${n.user_id},following_id.eq.${n.actor_id})`).limit(1)
    ]);
    if(event?.user_id===n.actor_id&&event.kind==='activity'&&event.proof_path&&author?.share_tasks&&author?.share_proof&&recipient?.notifications_enabled&&relations?.length){
-    const {data:subs}=await db.from('me_push_subscriptions').select('id,endpoint,p256dh,auth').eq('user_id',n.user_id).eq('active',true).order('updated_at',{ascending:false}).limit(1);
+    const {data:subs}=await db.from('me_push_subscriptions').select('id,endpoint,p256dh,auth').eq('user_id',n.user_id).eq('active',true).order('updated_at',{ascending:false});
     if(subs?.length){
      const publicKey=await configValue('vapid_public'),privateKey=await configValue('vapid_private');
      if(publicKey&&privateKey){
-      const sub=subs[0];try{
-       const accepted=await sendPushNotification({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},{title:'Me+ · Nieuwe activiteit',body:'Een vriend heeft een activiteit met foto gedeeld. Bekijk de foto in Me+.',tag:'me-photo-'+n.id,data:{url:'https://steenoventijn-bot.github.io/me-plus/?photos=friends',deliveryKey:'photo:'+n.id}},{publicKey,privateKey,subject:'https://steenoventijn-bot.github.io/me-plus/'});
-       status=accepted?'sent':'failed';
-      }catch(e:any){status='failed';const code=Number(e?.statusCode||e?.status||0);if(code===404||code===410)await db.from('me_push_subscriptions').update({active:false}).eq('id',sub.id)}
+      let retry=false;
+      for(const sub of subs){
+       if(delivery.deliveredSubscriptions.includes(sub.id))continue;
+       try{
+        const accepted=await sendPushNotification({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},{title:'Me+ · '+(author.display_name||'Een vriend'),body:'Nieuwe verbeteractiviteit met foto. Tik om de foto te bekijken.',tag:'me-photo-'+n.id,data:{url:'https://steenoventijn-bot.github.io/me-plus/?photos=friends&photo='+encodeURIComponent(n.data.eventId),deliveryKey:'photo:'+n.id}},{publicKey,privateKey,subject:'https://steenoventijn-bot.github.io/me-plus/'});
+        if(accepted)delivery.deliveredSubscriptions.push(sub.id);else retry=true;
+       }catch(e:any){const code=Number(e?.statusCode||e?.status||0);if(code===404||code===410)await db.from('me_push_subscriptions').update({active:false}).eq('id',sub.id);else retry=true}
+      }
+      status=retry?'failed':delivery.deliveredSubscriptions.length?'sent':'skipped';
      }else status='failed';
     }
    }
   }catch{status='failed'}
-  const {error:saveError}=await db.from('me_notifications').update({data:{...n.data,pushStatus:status}}).eq('id',n.id);if(saveError)console.error('Activity push status could not be saved');
+  const {error:saveError}=await db.from('me_notifications').update({data:{...delivery,pushStatus:status==='failed'&&delivery.pushAttempts<3?'pending':status}}).eq('id',n.id);if(saveError)console.error('Activity push status could not be saved');
   if(status==='sent')sent++;else if(status==='failed')failed++;else skipped++;
  }
  return {ok:true,sent,skipped,failed};

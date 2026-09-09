@@ -4,29 +4,41 @@ function w16PhotoEntry(scope,label,subtitle){return `<section class="section"><b
 const w16ProfileBase=profileView,w16SocialBase=socialView;
 profileView=function(){return w16ProfileBase().replace('</section>','</section>'+w16PhotoEntry('own','Mijn foto’s','Je activiteiten en bewijsfoto’s bij elkaar'))};
 socialView=function(){return w16SocialBase().replace('</section>','</section>'+w16PhotoEntry('friends','Foto’s van vrienden','Bekijk wat je vrienden hebben gedaan'))};
-async function w16OpenAlbum(initial='own'){
+async function w16OpenAlbum(initial='own',authorId='',photoId=''){
  w16AlbumClose?.();const account=server.profile?.id;if(!account)return;
  let scope=initial==='friends'?'friends':'own',items=[],hasMore=false,busy=false,sequence=0,closed=false;
  const page=document.createElement('div');page.className='w16-album';page.setAttribute('role','dialog');page.setAttribute('aria-modal','true');page.setAttribute('aria-label','Activiteitenfoto’s');
- page.innerHTML=`<header><button data-close aria-label="Sluiten">‹</button><div><small>ECHTE MOMENTEN</small><h1>Activiteiten in beeld</h1></div></header><nav aria-label="Fotoalbum"><button data-scope="own">Mijn foto’s</button><button data-scope="friends">Vrienden</button></nav><p class="w16-album-note"></p><div class="w16-photo-grid"></div><div class="w16-album-status" role="status"></div><button class="w16-more" hidden>Meer foto’s</button>`;
+ page.innerHTML=`<header><button data-close aria-label="Sluiten">‹</button><div><small>ECHTE MOMENTEN</small><h1>Activiteiten in beeld</h1></div></header><nav aria-label="Fotoalbum"><button data-scope="own">Mijn foto’s</button><button data-scope="friends">Vrienden</button></nav><div class="w17-album-tools"><button data-refresh>Vernieuwen</button><button data-share></button><button data-push>Meldingen aanzetten</button><label data-friend-filter>Bekijk foto’s van<select aria-label="Kies een vriend"><option value="">Alle vrienden</option>${(server.friends||[]).map(f=>`<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('')}</select></label></div><p class="w16-album-note"></p><div class="w17-photo-notifications"></div><div class="w16-photo-grid"></div><div class="w16-album-status" role="status"></div><button class="w16-more" hidden>Meer foto’s</button>`;
  document.body.appendChild(page);w14Stage?.pause(true);
  const close=()=>{closed=true;sequence++;page.remove();w16AlbumClose=null;if(view==='world')w14Stage?.pause(false)};w16AlbumClose=close;page.querySelector('[data-close]').onclick=close;
  page.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
  const status=page.querySelector('.w16-album-status'),grid=page.querySelector('.w16-photo-grid');
  const paint=()=>{
+  const shared=!!(server.profile?.shareTasks&&server.profile?.shareProof);
+  page.querySelector('[data-share]').hidden=scope!=='own';page.querySelector('[data-share]').textContent=shared?'Mijn foto’s privé maken':'Mijn foto’s delen met vrienden';
+  page.querySelector('[data-push]').hidden=!!(server.push?.enabled&&window.Notification?.permission==='granted');
+  page.querySelector('[data-friend-filter]').hidden=scope!=='friends';page.querySelector('select').value=authorId;
+
   page.querySelectorAll('[data-scope]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scope===scope)));
-  page.querySelector('.w16-album-note').textContent=scope==='own'?'Jouw bewijsfoto’s blijven hier bewaard. Je deelinstellingen bepalen wat vrienden zien.':'Alleen foto’s die je huidige vrienden met jou delen.';
+  page.querySelector('.w16-album-note').textContent=scope==='own'?(shared?'Je huidige vrienden kunnen al je activiteitenfoto’s zien. Nieuwe foto’s geven een melding.':'Je foto’s zijn nu privé. Met “Mijn foto’s delen met vrienden” deel je ook je eerdere foto’s met geaccepteerde vrienden.'):'Alleen foto’s die je huidige vrienden met jou delen.';
   grid.innerHTML=items.map((x,i)=>`<article class="w16-photo"><button data-photo="${i}" aria-label="Bekijk foto: ${esc(x.title)}">${x.url?`<img src="${esc(x.url)}" alt="${esc(x.title)}" loading="lazy" decoding="async">`:'<span>Foto niet beschikbaar</span>'}</button><div><small>${esc(x.isOwn?'Jij':x.name)} · ${esc(new Date(x.createdAt).toLocaleDateString('nl-NL',{day:'numeric',month:'short'}))}</small><h2>${esc(x.title)}</h2></div></article>`).join('');
   grid.querySelectorAll('[data-photo]').forEach(b=>b.onclick=()=>{const x=items[Number(b.dataset.photo)];if(!x.url)return;const full=document.createElement('div');full.className='w16-photo-full';full.innerHTML=`<button aria-label="Foto sluiten">×</button><img src="${esc(x.url)}" alt="${esc(x.title)}"><p>${esc(x.title)} · ${esc(x.name)}</p>`;page.appendChild(full);full.querySelector('button').onclick=()=>full.remove()});
   grid.querySelectorAll('img').forEach(img=>img.onerror=()=>{img.replaceWith(document.createTextNode('Foto verlopen. Open dit album opnieuw.'))});
   page.querySelector('.w16-more').hidden=!hasMore;
  };
  const load=async(reset=false)=>{if(busy&&!reset)return;const seq=++sequence;busy=true;if(reset){items=[];hasMore=false;paint()}status.textContent='Foto’s ophalen…';page.querySelector('.w16-more').disabled=true;
-  try{const result=await api('photo_gallery',{scope,offset:items.length});if(closed||seq!==sequence||account!==server.profile?.id)return;items.push(...result.items);hasMore=result.hasMore;paint();status.textContent=items.length?'':scope==='own'?'Je hebt nog geen activiteitenfoto’s. Voeg een foto toe wanneer je een activiteit afrondt.':'Er zijn nog geen gedeelde foto’s van je vrienden.'}
+  try{const result=await api('photo_gallery',{scope,offset:items.length,userId:scope==='friends'?authorId:'',photoId});if(closed||seq!==sequence||account!==server.profile?.id)return;items.push(...result.items);hasMore=result.hasMore;paint();if(photoId&&items.length)grid.querySelector('[data-photo]')?.click();status.textContent=items.length?'':scope==='own'?'Je hebt nog geen activiteitenfoto’s. Voeg een foto toe wanneer je een activiteit afrondt.':'Nog geen zichtbare foto’s. Je vriend moet in Mijn foto’s kiezen voor delen met vrienden. Foto’s blijven privé zolang delen uitstaat.'}
   catch(e){if(!closed&&seq===sequence){status.textContent='Foto’s laden lukte niet. ';const retry=document.createElement('button');retry.textContent='Opnieuw proberen';retry.onclick=()=>load(items.length===0);status.appendChild(retry)}}
   finally{if(seq===sequence){busy=false;page.querySelector('.w16-more').disabled=false}}
  };
- page.querySelectorAll('[data-scope]').forEach(b=>b.onclick=()=>{if(scope!==b.dataset.scope){scope=b.dataset.scope;void load(true)}});page.querySelector('.w16-more').onclick=()=>load();page.querySelector('[data-close]').focus();await load(true);
+ page.querySelectorAll('[data-scope]').forEach(b=>b.onclick=()=>{if(scope!==b.dataset.scope){scope=b.dataset.scope;authorId='';photoId='';void load(true);void loadNotes()}});page.querySelector('.w16-more').onclick=()=>load();page.querySelector('[data-close]').focus();
+ const loadNotes=async()=>{const target=page.querySelector('.w17-photo-notifications');target.innerHTML='';if(scope!=='friends')return;try{const r=await api('notifications');if(closed||scope!=='friends')return;const notes=(r.notifications||[]).filter(n=>n.type==='activity'&&(!authorId||n.actor_id===authorId)).slice(0,8);target.innerHTML=notes.length?'<h2>Activiteitsmeldingen</h2>'+notes.map((n,i)=>`<button data-note="${i}"><b>${esc(n.body)}</b><span>Foto bekijken →</span></button>`).join(''):'';target.querySelectorAll('[data-note]').forEach(b=>b.onclick=()=>{const n=notes[Number(b.dataset.note)];w16OpenAlbum('friends',n.actor_id,n.data?.eventId||'')})}catch{}};
+ page.querySelector('[data-refresh]').onclick=()=>{photoId='';void load(true);void loadNotes()};
+ page.querySelector('select').onchange=e=>{authorId=e.target.value;photoId='';void load(true);void loadNotes()};
+ page.querySelector('[data-share]').onclick=async()=>{const b=page.querySelector('[data-share]');b.disabled=true;try{const shared=!!(server.profile?.shareTasks&&server.profile?.shareProof),r=await api('settings',shared?{shareProof:false}:{shareTasks:true,shareProof:true});if(account!==server.profile?.id)return;v13q4ApplyProfile(r.profile);paint();toast(shared?'Je foto’s zijn nu privé.':'Je vrienden kunnen nu je activiteitenfoto’s zien.')}catch(e){toast(e.message)}finally{b.disabled=false}};
+ page.querySelector('[data-push]').onclick=async()=>{const b=page.querySelector('[data-push]');b.disabled=true;try{await enablePush();paint();toast('Meldingen staan aan op dit apparaat.')}catch(e){toast(e.message)}finally{b.disabled=false}};
+ try{const r=await api('me');if(closed||account!==server.profile?.id)return;v13q4ApplyProfile(r.profile)}catch{}
+ await load(true);void loadNotes();
 }
 async function w16OpenProject(){
  const engine=await w14Engine(),project=engine.constructionProgress(mw.data||{});
@@ -35,5 +47,5 @@ async function w16OpenProject(){
 }
 const w16BindBase=bind;
 bind=function(){w16BindBase();document.querySelectorAll('[data-w16-album]').forEach(b=>b.onclick=()=>w16OpenAlbum(b.dataset.w16Album));el('w16-project')?.addEventListener('click',w16OpenProject);
- if(!w16DeepLinkOpened&&server.profile?.id&&new URLSearchParams(location.search).get('photos')==='friends'){w16DeepLinkOpened=true;setTimeout(()=>w16OpenAlbum('friends'),0)}
+ if(!w16DeepLinkOpened&&server.profile?.id&&new URLSearchParams(location.search).get('photos')==='friends'){w16DeepLinkOpened=true;setTimeout(()=>w16OpenAlbum('friends','',new URLSearchParams(location.search).get('photo')||''),0)}
 };

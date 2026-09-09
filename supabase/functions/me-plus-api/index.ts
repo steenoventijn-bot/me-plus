@@ -55,7 +55,7 @@ async function current(token: string) {
   return data || null
 }
 async function addNotification(userId:string, actorId:string|null, type:string, body:string, data:any={}) {
-  await db.from('me_notifications').insert({user_id:userId,actor_id:actorId,type,body,data})
+  const {error}=await db.from('me_notifications').insert({user_id:userId,actor_id:actorId,type,body,data});if(error)throw error
 }
 async function recalcPoints(userId:string) {
   const { data } = await db.from('me_point_events').select('points').eq('user_id',userId)
@@ -250,10 +250,14 @@ Deno.serve(async req => {
     if(op==='photo_gallery'){
       const scope=body.scope==='friends'?'friends':'own',offset=Math.max(0,Math.min(100000,Math.floor(Number(body.offset)||0))),limit=24;
       const friends=scope==='friends'?await acceptedFriendIds(me.id):[];
+      const authorId=safeText(body.userId,60),photoId=safeText(body.photoId,60);
+      if(authorId&&scope==='friends'&&!friends.includes(authorId))return json({error:'Dit album is alleen beschikbaar voor huidige vrienden.'},403);
       const {data:authors,error:authorError}=scope==='own'?{data:[me],error:null}:friends.length?await db.from('me_profiles').select('id,display_name,share_tasks,share_proof').in('id',friends):{data:[],error:null};
       if(authorError)throw authorError;
-      const allowed=(authors||[]).filter((p:any)=>canSeePhoto(me.id,p,friends));if(!allowed.length)return json({items:[],hasMore:false});
-      const {data:events,error}=await db.from('me_point_events').select('id,user_id,title,proof_path,created_at,local_date').eq('kind','activity').in('user_id',allowed.map((p:any)=>p.id)).not('proof_path','is',null).order('created_at',{ascending:false}).order('id',{ascending:false}).range(offset,offset+limit);
+      const allowed=(authors||[]).filter((p:any)=>canSeePhoto(me.id,p,friends)&&(!authorId||p.id===authorId));if(!allowed.length)return json({items:[],hasMore:false});
+      let photoQuery=db.from('me_point_events').select('id,user_id,title,proof_path,created_at,local_date').eq('kind','activity').in('user_id',allowed.map((p:any)=>p.id)).not('proof_path','is',null).order('created_at',{ascending:false}).order('id',{ascending:false}).range(offset,offset+limit);
+      if(photoId)photoQuery=photoQuery.eq('id',photoId);
+      const {data:events,error}=await photoQuery;
       if(error)throw error;const rows=(events||[]).slice(0,limit);
       const {data:urls,error:signError}=rows.length?await db.storage.from('me-proof').createSignedUrls(rows.map((e:any)=>e.proof_path),600):{data:[],error:null};if(signError)throw signError;
       const signed=new Map((urls||[]).map((u:any)=>[u.path,u.signedUrl]));
