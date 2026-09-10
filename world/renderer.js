@@ -5,53 +5,14 @@ import {itemModel,houseModel,adventureBoat,material,random,disposeModel,Builder,
 import {coastRadius,landDistance,footprint,itemPosition,placementResult} from './placement.js';
 export {footprint,itemPosition,placementResult,houseDefaults};
 
-const groundY=.32;
-function terrain(){
- const positions=[],colors=[],indices=[],n=128,rings=26,color=new T.Color();
- for(let row=0;row<=rings;row++)for(let i=0;i<=n;i++){
-  const a=i/n*Math.PI*2,f=row/rings,rr=coastRadius(a),x=Math.cos(a)*8.7*rr*f,z=Math.sin(a)*8.15*rr*f;
-  let y=f<.94?groundY:groundY-(f-.94)/.06*.7;
-  const noise=Math.sin(x*.85+z*.43)*Math.cos(z*.73-x*.21)*.028+Math.sin(x*17.2+z*11.1)*.008;
-  positions.push(x,y,z);
-  color.set(f>.98?'#bfac8b':f>.947?'#efd398':f>.92?'#ccd283':'#85bd48');color.offsetHSL(0,noise*.5,noise+(1-f)*.035);colors.push(color.r,color.g,color.b);
-  if(row<rings&&i<n){const v=row*(n+1)+i;indices.push(v,v+1,v+n+1,v+1,v+n+2,v+n+1)}
- }
- const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('color',new T.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();
- const mesh=new T.Mesh(g,new T.MeshStandardMaterial({vertexColors:true,roughness:1,side:T.DoubleSide}));mesh.receiveShadow=true;
- const coast=new Builder(),rng=random(713);
- for(let i=0;i<54;i++){const a=i/54*Math.PI*2,r=coastRadius(a)*.989;
-  coast.ball(i%3===0?'#b7b3a3':i%3===1?'#cfc5ad':'#c1b396',Math.cos(a)*8.7*r,-.09,Math.sin(a)*8.15*r,.20+rng()*.10,.25+rng()*.15,.20+rng()*.07);
- }
- const group=new T.Group();group.add(mesh,coast.end());return group;
-}
-function ocean(){
- const uniforms={time:{value:0}};
- const mat=new T.ShaderMaterial({uniforms,vertexShader:`varying vec3 wp;void main(){wp=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`
- varying vec3 wp;uniform float time;
- float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
- float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}
- void main(){vec2 p=wp.xz;vec2 d=p/vec2(8.7,8.15);float a=atan(d.y,d.x);float edge=1.+.045*sin(3.*a+.7)+.028*cos(5.*a-1.2)+.018*sin(9.*a);float coast=length(d)/edge;
- float depth=smoothstep(.98,1.8,coast);vec3 col=mix(vec3(.10,.76,.80),vec3(.015,.38,.64),depth);
- float n=noise(p*2.1+vec2(time*.12,time*.07));float w=sin(p.x*2.8+p.y*3.7+n*5.+time*.7);float cross=sin(p.x*5.-p.y*2.6+n*3.-time*.52);
- float glint=pow(max(0.,w*cross),14.);col+=vec3(.43,.68,.68)*glint*.43;
- float caustic=pow(1.-abs(sin(p.x*3.1+n*4.+time*.2)*sin(p.y*4.3+n*2.)),13.);col+=caustic*vec3(.1,.21,.15)*(1.-depth)*.32;
- float foam=smoothstep(.10,.01,abs(coast-(.987+.012*sin(time*.48+n*5.))))*smoothstep(.34,.66,n);col=mix(col,vec3(.82,.96,.89),foam*.72);float ripple=pow(max(0.,sin((coast-1.)*180.-time*.85+n*3.)),18.)*(1.-smoothstep(1.01,1.20,coast))*smoothstep(.99,1.02,coast);col=mix(col,vec3(.79,.96,.94),ripple*.38);
- float haze=smoothstep(17.,45.,-p.y);col=mix(col,vec3(.34,.74,.85),haze);
- gl_FragColor=vec4(col,1.);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>}`});
- const geo=new T.PlaneGeometry(100,100,1,1);geo.rotateX(-Math.PI/2);const mesh=new T.Mesh(geo,mat);mesh.position.y=-.19;return mesh;
-}
-function grass(){
- const rng=random(24),geo=new T.ConeGeometry(.025,.15,3),mat=material('#719f36');
- const count=1600,mesh=new T.InstancedMesh(geo,mat,count),obj=new T.Object3D();let n=0;
- while(n<count){const x=rng()*18-9,z=rng()*17-8.5;if(landDistance(x+9.5,z+9.5)>.91)continue;obj.position.set(x,groundY+.035,z);obj.rotation.set((rng()-.5)*.3,rng()*Math.PI,(rng()-.5)*.5);obj.scale.setScalar(.6+rng()*.8);obj.updateMatrix();mesh.setMatrixAt(n,obj.matrix);mesh.setColorAt(n,new T.Color().setHSL(.19+rng()*.05,.48,.35+rng()*.16));n++}mesh.instanceMatrix.needsUpdate=true;return mesh;
-}
-function skyTexture(){const canvas=document.createElement('canvas');canvas.width=2;canvas.height=256;const c=canvas.getContext('2d'),g=c.createLinearGradient(0,0,0,256);g.addColorStop(0,'#2cacf0');g.addColorStop(.42,'#97dfef');g.addColorStop(1,'#167cb5');c.fillStyle=g;c.fillRect(0,0,2,256);const t=new T.CanvasTexture(canvas);t.colorSpace=T.SRGBColorSpace;return t}
+import {groundY,terrain,ocean,atmosphere} from './environment.js';
+function skyTexture(){const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;const c=canvas.getContext('2d'),g=c.createLinearGradient(0,0,0,512);g.addColorStop(0,'#279fea');g.addColorStop(.52,'#a6e5f1');g.addColorStop(1,'#298fbf');c.fillStyle=g;c.fillRect(0,0,512,512);const glow=c.createRadialGradient(100,90,3,100,90,90);glow.addColorStop(0,'rgba(255,250,220,.95)');glow.addColorStop(.18,'rgba(255,245,210,.7)');glow.addColorStop(1,'rgba(255,246,221,0)');c.fillStyle=glow;c.fillRect(0,0,512,512);const t=new T.CanvasTexture(canvas);t.colorSpace=T.SRGBColorSpace;return t}
 function pathStrip(points){
  const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(p.x-9.5,groundY+.007,p.y-9.5))),v=[],idx=[];
  for(let i=0;i<=70;i++){const p=curve.getPoint(i/70),tan=curve.getTangent(i/70),width=.30+.04*Math.sin(i*.35);v.push(p.x-tan.z*width,p.y,p.z+tan.x*width,p.x+tan.z*width,p.y,p.z-tan.x*width);if(i<70){let j=i*2;idx.push(j,j+2,j+1,j+1,j+2,j+3)}}
  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setIndex(idx);g.computeVertexNormals();const mesh=new T.Mesh(g,material('#ecd591'));mesh.receiveShadow=true;return mesh;
 }
-function lighting(scene){scene.add(new T.HemisphereLight('#e0f5ff','#7c8050',1.7));const sun=new T.DirectionalLight('#fff0cc',3.2);sun.position.set(-11,24,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-13,right:13,top:13,bottom:-13,near:1,far:65});sun.shadow.bias=-.001;sun.shadow.normalBias=.04;sun.shadow.radius=3;scene.add(sun);return sun}
+function lighting(scene){scene.add(new T.HemisphereLight('#d9f1ff','#698c46',1.45));const sun=new T.DirectionalLight('#fff1d3',3.5);sun.position.set(-10,19,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-13,right:13,top:13,bottom:-13,near:1,far:65});sun.shadow.bias=-.001;sun.shadow.normalBias=.04;sun.shadow.radius=4;scene.add(sun);return sun}
 export function createWorld(host,{onSelect=()=>{},onDrop=()=>{},onHint=()=>{},onError=()=>{},onCameraChange=()=>{},onBoat=()=>{}}={}){
  const renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.07;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
  const canvas=renderer.domElement;canvas.className='w14-canvas';canvas.setAttribute('aria-label','Je eiland in 3D. Houd een object vast om het te verplaatsen.');canvas.tabIndex=0;host.appendChild(canvas);
@@ -63,7 +24,7 @@ export function createWorld(host,{onSelect=()=>{},onDrop=()=>{},onHint=()=>{},on
   const solid=items.filter(i=>!/(pond|pool|stream|dock|bridge)/.test(i.item_key));contactShadows=new T.InstancedMesh(contactGeometry,contactMaterial,Math.max(1,solid.length));contactShadows.count=solid.length;
   const transform=new T.Object3D();solid.forEach((it,i)=>{const p=itemPosition(it),f=footprint(it.item_key,Number(it.rotation||0));transform.position.set(p.x+f.ox-9.5,groundY+.016,p.y+f.oy-9.5);transform.scale.set(f.w*1.5,1,f.h*1.5);transform.updateMatrix();contactShadows.setMatrixAt(i,transform.matrix)});contactShadows.instanceMatrix.needsUpdate=true;scene.add(contactShadows);
  }
- const sun=lighting(scene);const hour=new Date().getHours();if(hour>=19||hour<7){sun.color.set('#ffdcaa');sun.intensity=2.5}scene.add(terrain(),grass());const life=createLife(scene);const water=ocean();scene.add(water);const boat=adventureBoat();boat.position.set(7,-.08,7);boat.rotation.y=-.35;scene.add(boat);let paths=new T.Group();scene.add(paths);
+ const sun=lighting(scene);scene.add(terrain(),atmosphere());const life=createLife(scene);const water=ocean();scene.add(water);const boat=adventureBoat();boat.position.set(7,-.08,7);boat.rotation.y=-.35;scene.add(boat);let paths=new T.Group();scene.add(paths);
  let awaitingPlacement=false,lastPlacement=null,committingPlacement=false;
  let data=null,edit=false,selected=null,zoom=1,pan=new T.Vector2(),frame=0,disposed=false,paused=false,last=0,slow=0,frames=0,ms=0,drag=null,hold=null,down=null,pinch=null,ghost=null,ghostKey=null;
  const points=new Map();const ring=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({color:'#42e298',transparent:true,opacity:.32,side:T.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=groundY+.028;ring.visible=false;scene.add(ring);
@@ -109,7 +70,7 @@ export function createWorld(host,{onSelect=()=>{},onDrop=()=>{},onHint=()=>{},on
  },
  cancelPlacement(){awaitingPlacement=false;lastPlacement=null;clearDrag()},
  beginInventoryDrag(key,e){startDrag(key,null,e);const move=ev=>preview(ev.clientX,ev.clientY),stop=ev=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',stop);document.removeEventListener('pointercancel',cancel);void finish(ev)},cancel=()=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',stop);document.removeEventListener('pointercancel',cancel);clearDrag()};document.addEventListener('pointermove',move);document.addEventListener('pointerup',stop);document.addEventListener('pointercancel',cancel);return cancel},
- dispose(){disposed=true;cancelAnimationFrame(frame);abort.abort();observer.disconnect();clearHold();clearDrag();life.dispose();scene.traverse(o=>o.geometry?.dispose());scene.background.dispose();water.material.dispose();ring.material.dispose();contactShadows?.dispose();contactGeometry.dispose();contactMaterial.dispose();renderer.dispose();canvas.remove()}};
+ dispose(){disposed=true;cancelAnimationFrame(frame);abort.abort();observer.disconnect();clearHold();clearDrag();life.dispose();scene.traverse(o=>o.geometry?.dispose());scene.background.dispose();scene.traverse(o=>{if(o.material?.customProgramCacheKey?.()==='island-ground-20')o.material.dispose()});water.material.dispose();ring.material.dispose();contactShadows?.dispose();contactGeometry.dispose();contactMaterial.dispose();renderer.dispose();canvas.remove()}};
 }
 export function createHousePreview(host,house){
  const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;host.appendChild(renderer.domElement);
