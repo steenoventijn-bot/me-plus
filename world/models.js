@@ -188,6 +188,7 @@ export function itemModel(key,house={}){
  else if(key==='trophy_battle'){
   const gold=material(({trophy_bronze:'#b97943',trophy_battle:'#b97943',trophy_silver:'#c1cedb',trophy_gold:'#efc44b',trophy_champion:'#efc44b'})[originalKey]||'#dfb245',.26,.75);b.box('#655940',0,.12,0,.55,.24,.55);b.pole(gold,0,.42,0,.09,.38);b.add(new T.CylinderGeometry(.27,.1,.35,16),gold,0,.72,0);for(const s of [-1,1])b.add(new T.TorusGeometry(.16,.028,6,16),gold,s*.26,.73,0);b.ball(gold,0,.97,0,.055);
  }
+ else if(key==='expedition_lantern'){b.box('#28516a',0,.10,0,.42,.20,.42);b.pole('#28516a',0,.60,0,.045,1.05);b.box(material('#ffd067',.4,.1,'#ffc253'),0,1.06,0,.28,.34,.28);b.add(new T.ConeGeometry(.25,.18,4),material('#23aeb9'),0,1.32,0);}
  else if(key==='social_flag'){b.pole('#977453',0,.72,0,.035,1.45);b.box('#f49d60',.26,1.18,0,.51,.38,.026);b.pole('#b3aa89',0,.055,0,.16,.11)}
  else if(key==='knowledge_stack'){for(let i=0;i<4;i++){b.box(['#609999','#d4b055','#9b729d','#cd8461'][i],0,.08+i*.105,0,.61,.08,.43,0,i%2*.1);b.box('#f6eacf',0,.086+i*.105,.017,.55,.04,.41)}}
  else if(key==='golden_duck'){const gold=material('#e8b541',.32,.6);b.ball(gold,0,.25,0,.31,.23,.23,true);b.ball(gold,0,.49,.19,.15,.15,.15,true);b.ball('#e98e30',0,.47,.36,.11,.04,.1);for(const x of [-.085,.085])b.ball('#313b38',x,.54,.3,.019)}
@@ -198,3 +199,15 @@ export function itemModel(key,house={}){
 export function disposeModel(group){group.traverse(o=>{if(o.geometry)o.geometry.dispose()})}
 export function disposeMaterials(){for(const mat of palette.values())mat.dispose();palette.clear()}
 export {Builder,flowers};
+
+export function adventureBoat(){
+ const b=new Builder();
+ b.ball('#e5684d',0,.12,0,.62,.27,1.15,true);b.box('#f9e7c5',0,.30,0,1.03,.10,1.72);
+ b.box('#2a7186',0,.45,.38,.74,.27,.52);b.box('#fff5de',0,.63,.38,.88,.10,.62);
+ b.pole('#9b6844',0,1.06,-.27,.045,1.65);
+ const sail=new T.Shape();sail.moveTo(.05,0);sail.lineTo(.05,1.25);sail.lineTo(.85,.13);sail.closePath();
+ b.add(new T.ShapeGeometry(sail),material('#fff4dc'),0,.59,-.27);
+ b.box('#ffc753',.16,1.99,-.27,.34,.17,.025);
+ for(const x of [-.46,.46])b.pole('#b9754c',x,.34,0,.035,1.55,Math.PI/2,0);
+ return b.end();
+}

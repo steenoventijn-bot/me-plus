@@ -12,7 +12,7 @@ test('item preview requires confirmation, rejects water, cancels safely and send
  globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.matchMedia=()=>({matches:false});
  let source=fs.readFileSync('world/renderer.js','utf8');
  source=source.replace("import * as T from 'three';",`import * as RealThree from '${import.meta.resolve('three')}';const T={...RealThree,WebGLRenderer:globalThis.__itemTestRenderer};`);
- for(const name of ['models','placement','life'])source=source.replace(`'./${name}.js'`,`'${pathToFileURL(process.cwd()+'/world/'+name+'.js')}'`);
+ for(const name of ['models','placement','life','adventure'])source=source.replace(`'./${name}.js'`,`'${pathToFileURL(process.cwd()+'/world/'+name+'.js')}'`);
  const {createWorld}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
  let saves=0,release;
  const host={appendChild(){},getBoundingClientRect:canvas.getBoundingClientRect};
