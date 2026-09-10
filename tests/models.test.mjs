@@ -3,3 +3,10 @@ function signature(model){const hash=createHash('sha256');model.updateMatrixWorl
 test('each house option alters the actual 3D model',()=>{const normal=signature(houseModel());const changes={style:'modern',roofShape:'hip',roof:'red',walls:'stone',door:'round',windows:'wide',frames:'dark',chimney:'none',fence:'none',decor:'hedge'};for(const [key,value]of Object.entries(changes))assert.notEqual(signature(houseModel({...houseDefaults,[key]:value})),normal,key)});
 test('models contain finite geometry and have a limited material/draw-call budget',()=>{for(const key of ['house_main','tree_oak','palm_tree','pond_garden','dock_wood','bench_wood','lamp_glow','flowers_pink','knowledge_house','fountain']){const model=itemModel(key);const bounds=new Box3().setFromObject(model);assert.ok(Number.isFinite(bounds.min.x)&&Number.isFinite(bounds.max.y),key);assert.ok(model.children.length<=24,`${key}: ${model.children.length} draw calls`);model.traverse(o=>{if(o.geometry)for(const value of o.geometry.attributes.position.array)assert.ok(Number.isFinite(value),key)});disposeModel(model)}});
 test('battle trophy tiers have distinct rendered materials',()=>{const tiers=['trophy_bronze','trophy_silver','trophy_gold'].map(key=>signature(itemModel(key)));assert.equal(new Set(tiers).size,3);assert.equal(signature(itemModel('trophy_battle')),signature(itemModel('trophy_bronze')))});
+
+test('detailed foliage and softened cottage retain bounded geometry and material batches',()=>{
+ for(const [key,budget,calls] of [['tree_oak',14000,1],['house_main',40000,4],['palm_tree',4500,1]]){
+  const g=itemModel(key);let triangles=0,count=0;g.traverse(o=>{if(o.isMesh){count++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3}});
+  assert.ok(triangles<=budget,`${key}: ${triangles}`);assert.ok(count<=calls,`${key}: ${count}`);const bounds=new Box3().setFromObject(g);assert.ok(bounds.max.y<4.1);disposeModel(g);
+ }
+});

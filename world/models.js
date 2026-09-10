@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
 const palette=new Map(),batchPalette=new Map();
@@ -9,6 +10,7 @@ export function material(color,roughness=.8,metalness=0,emissive=0) {
 }
 export function random(seed=1){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return (seed>>>0)/4294967296;};}
 const cube=new T.BoxGeometry(1,1,1),sphere=new T.IcosahedronGeometry(1,1),round=new T.SphereGeometry(1,12,8),cylinder=new T.CylinderGeometry(1,1,1,10);
+const softBox=new RoundedBoxGeometry(1,1,1,1,.09),leafForm=new T.SphereGeometry(1,6,4),taperedTrunk=new T.CylinderGeometry(.65,1,1,9);
 class Builder {
   constructor(){this.parts=new Map()}
   add(geo,mat,x=0,y=0,z=0,sx=1,sy=1,sz=1,rx=0,ry=0,rz=0){
@@ -16,6 +18,8 @@ class Builder {
     const g=(geo.index?geo.toNonIndexed():geo.clone()).applyMatrix4(m);if(!this.parts.has(mat))this.parts.set(mat,[]);this.parts.get(mat).push(g);
   }
   box(c,x,y,z,w,h,d,rx=0,ry=0,rz=0){this.add(cube,typeof c==='object'?c:material(c),x,y,z,w,h,d,rx,ry,rz)}
+  soft(c,x,y,z,w,h,d,rx=0,ry=0,rz=0){this.add(softBox,typeof c==='object'?c:material(c),x,y,z,w,h,d,rx,ry,rz)}
+  branch(c,from,to,r){const a=new T.Vector3(...from),z=new T.Vector3(...to),delta=z.clone().sub(a),mid=a.clone().add(z).multiplyScalar(.5),angle=new T.Euler().setFromQuaternion(new T.Quaternion().setFromUnitVectors(new T.Vector3(0,1,0),delta.clone().normalize()));this.add(taperedTrunk,material(c),mid.x,mid.y,mid.z,r,delta.length(),r,angle.x,angle.y,angle.z)}
   ball(c,x,y,z,w,h=w,d=w,smooth=false){this.add(smooth?round:sphere,typeof c==='object'?c:material(c),x,y,z,w,h,d)}
   pole(c,x,y,z,r,h,rx=0,ry=0,rz=0){this.add(cylinder,typeof c==='object'?c:material(c),x,y,z,r,h,r,rx,ry,rz)}
   end(){
@@ -47,7 +51,7 @@ function windowPane(b,x,y,z,h,side=false){
  const frames=({white:'#fff4da',wood:'#995e32',dark:'#30444a'})[h.frames]||'#fff4da',w=h.windows==='wide'?.78:.53,wh=h.windows==='modern'?.82:.63;
  const g=new Builder(),glow=material('#ffcb6c',.2,.05,'#e39426');
  if(h.windows==='round'){g.add(new T.CylinderGeometry(.34,.34,.1,24),material(frames),0,0,0,1,1,1,Math.PI/2);g.add(new T.CylinderGeometry(.26,.26,.12,24),glow,0,0,.01,1,1,1,Math.PI/2)}
- else {g.box(frames,0,0,0,w+.12,wh+.12,.13);g.box(glow,0,0,.08,w,wh,.06)}
+ else {g.soft(frames,0,0,0,w+.12,wh+.12,.13);g.soft(glow,0,0,.08,w,wh,.06)}
  g.box(frames,0,0,.13,.045,wh,.045);g.box(frames,0,0,.14,w,.045,.045);g.box('#f8edcf',0,-wh/2-.1,.05,w+.23,.12,.25);
  const group=g.end();group.position.set(x,y,z);if(side)group.rotation.y=Math.PI/2;group.updateMatrixWorld(true);
  group.children.forEach(mesh=>{b.add(mesh.geometry,mesh.material,0,0,0);const arr=b.parts.get(mesh.material);arr[arr.length-1].applyMatrix4(mesh.matrixWorld);mesh.geometry.dispose()});
@@ -55,7 +59,8 @@ function windowPane(b,x,y,z,h,side=false){
 export const houseDefaults={style:'cottage',roofShape:'gable',roof:'blue',walls:'wood',door:'oak',windows:'classic',frames:'white',chimney:'brick',fence:'wood',decor:'flowers',level:1};
 export function houseModel(raw={}) {
  const h={...houseDefaults,...raw},b=new Builder(),roof=({blue:'#2772c6',red:'#b84933',green:'#477f4d',purple:'#7764a0',gold:'#c49333'})[h.roof],wall=({wood:'#f5e3ba',stone:'#c7ccc3',modern:'#e7eee9',colorful:'#eec3c0'})[h.walls],trim=h.style==='coastal'?'#fdf4dc':'#b78352',w=h.style==='modern'?2.95:2.75,d=h.style==='coastal'?2.25:2.4,top=2.05;
- b.box('#bfac8d',0,.12,0,w+.17,.24,d+.16);b.box(wall,0,1.1,0,w,1.96,d);
+ b.soft('#bfac8d',0,.12,0,w+.17,.24,d+.16);b.soft(wall,0,1.1,0,w,1.96,d);
+ for(let row=0;row<2;row++)for(let i=0;i<8;i++)b.soft(i%3?'#c9b89a':'#b7a78c',-w/2+.18+i*(w-.36)/7,.085+row*.115,d/2+.075,.31,.10,.12);
  // Real façade panels, corner posts and stone foundation.
  for(let row=0;row<9;row++)b.box(h.walls==='stone'?'#b1b9af':'#e4cca2',0,.28+row*.195,d/2+.009,w,.019,.025);
  for(const x of [-w/2,w/2])for(const z of [-d/2,d/2])b.box(trim,x,1.08,z,.13,1.98,.13);
@@ -74,7 +79,7 @@ export function houseModel(raw={}) {
   const half=w/2+.27,rows=7,cols=11;
   for(const sign of [-1,1])for(let i=0;i<rows;i++)for(let j=0;j<cols;j++){
    const f=(i+.5)/rows,x=sign*f*half,y=top+rise*(1-f)+(h.roofShape==='soft'?-.18*Math.sin(f*Math.PI):0),angle=sign*Math.atan2(rise,half);
-   b.box(roofmat[Math.floor(rng()*4)],x,y,-d/2-.22+(j+.5)*(d+.44)/cols,Math.hypot(half,rise)/rows+.045,.08,(d+.44)/cols+.018,0,0,-angle);
+   b.soft(roofmat[Math.floor(rng()*4)],x,y,-d/2-.22+(j+.5)*(d+.44)/cols,Math.hypot(half,rise)/rows+.045,.08,(d+.44)/cols+.018,0,0,-angle);
   }
   b.pole(roofmat[0],0,top+rise+.025,0,.11,d+.5,Math.PI/2);
   for(const z of [-d/2-.25,d/2+.25])for(const sign of [-1,1])b.box('#e6cb91',sign*half/2,top+rise/2-.10,z,Math.hypot(half,rise)+.1,.115,.13,0,0,-sign*Math.atan2(rise,half));
@@ -89,7 +94,7 @@ export function houseModel(raw={}) {
  b.ball('#417996',0,1.21,d/2+.27,.12,.13,.025,true);
  windowPane(b,-.91,1.24,d/2+.05,h);windowPane(b,.91,1.24,d/2+.05,h);windowPane(b,w/2+.02,1.2,.3,h,true);
  if(h.roofShape!=='hip')windowPane(b,0,top+.5,d/2+.01,{...h,windows:'round'});
- for(let step=0;step<3;step++)b.box('#ddc69a',0,.07+step*.063,d/2+.7-step*.19,1.08,.13,.3);
+ for(let step=0;step<3;step++)b.soft('#ddc69a',0,.07+step*.063,d/2+.7-step*.19,1.08,.13,.3);
  if(h.chimney!=='none'){
   const col=h.chimney==='brick'?'#ad6849':'#e7e1cd';b.box(col,.77,top+1.08,-.5,.42,1.43,.48);
   for(let y=0;y<7;y++)b.box('#d9bea0',.77,top+.45+y*.18,-.5,.44,.022,.5);
@@ -98,6 +103,8 @@ export function houseModel(raw={}) {
  if(h.fence!=='none'){
   const c=h.fence==='white'?'#f4ecd5':'#b17b44';for(const side of [-1,1]){for(let i=0;i<3;i++)b.pole(c,side*1.54,.4,.1+i*.53,.055,.8);for(let y of [.24,.53])b.box(c,side*1.54,y,.61,.06,.08,1.23)}
  }
+ // Small warm wall lanterns and their brackets stay in the house material batches.
+ for(const x of [-.59,.59]){b.box('#665b46',x,1.22,d/2+.16,.035,.22,.08);b.soft('#5b5143',x,1.1,d/2+.25,.13,.21,.12);b.soft(material('#ffcd73',.2,.05,'#e39426'),x,1.1,d/2+.32,.09,.14,.04);}
  if(h.decor==='flowers')for(const x of [-.96,.96]){b.box('#9c663c',x,.7,d/2+.27,.64,.16,.32);flowers(b,x,d/2+.27,Math.round((x+2)*10),.58,.77)}
  else if(h.decor==='hedge')for(const x of [-.97,.97])bush(b,x,.23,d/2+.28,1.1);
  if(h.style==='coastal'){for(const x of [-1.25,1.25])b.pole('#f4ecd8',x,.76,d/2+.28,.04,1.45)}
@@ -105,15 +112,23 @@ export function houseModel(raw={}) {
  return b.end();
 }
 function tree(b,palm=false,special=false){
- const rng=random(special?27:14);b.pole('#80502b',0,1,0,.16,2);
- b.pole('#ac703d',-.1,.65,.02,.07,1.3,0,0,-.17);
- for(let i=0;i<4;i++){const a=i*1.57;b.pole('#84502b',Math.sin(a)*.19,1.65,Math.cos(a)*.19,.07,.9,Math.cos(a)*.65,0,Math.sin(a)*.65)}
+ const rng=random(special?27:14);
+ const spine=[[0,0,0],[-.055,.65,.025],[.035,1.25,-.025],[.10,1.95,0]];
+ for(let i=0;i<spine.length-1;i++)b.branch(i%2?'#976035':'#85512e',spine[i],spine[i+1],.18-i*.035);
+ for(let i=0;i<5;i++){const a=i*Math.PI*2/5;b.branch('#85512e',[Math.cos(a)*.24,.025,Math.sin(a)*.24],[-.02,.5,0],.065)}
+ for(let i=0;i<4;i++){const a=i*1.57+.3;b.branch('#986438',[.02,1.25,0],[Math.sin(a)*.58,2.05,Math.cos(a)*.55],.08)}
  if(palm){for(let i=0;i<9;i++){const a=i*6.283/9;for(let j=0;j<5;j++){const d=(j+.5)*.25;b.ball(j%2?'#609d38':'#397c39',Math.sin(a)*d,2.25+.3*Math.sin(j*.7)-j*.055,Math.cos(a)*d,.27,.07,.22)}}return}
- const cs=special?['#38874c','#52a04e','#8ec851','#b9d26b']:['#357f2e','#569d2c','#79b62f','#add447'];
- for(let i=0;i<140;i++){const a=rng()*6.283,z=rng()*2-1,r=Math.sqrt(1-z*z),rad=Math.cbrt(rng());const x=r*Math.cos(a)*1.1*rad,y=2.24+z*.94*rad,zz=r*Math.sin(a)*1.03*rad;
-  b.ball(cs[Math.min(3,Math.max(0,Math.floor((y-1.4)*1.7+rng())))],x,y,zz,.24+rng()*.11,.16+rng()*.06,.2+rng()*.1,true);
+ const cs=special?['#367744','#559b43','#87bc4b','#b3d05e']:['#327a30','#569e30','#80b936','#b2d84d'];
+ // Solid shaded lobes fill the crown; individually oriented leaves sit on its surface.
+ for(let i=0;i<14;i++){const a=i*2.39996,y=1.82+(i%4)*.25,r=.45+(i%3)*.10;b.ball(cs[i%3],Math.cos(a)*r,y,Math.sin(a)*r*.9,.53,.43,.49,true)}
+ const count=300;
+ for(let i=0;i<count;i++){
+  const vertical=1-2*(i+.5)/count,a=i*2.399963+rng()*.12,r=Math.sqrt(1-vertical*vertical),bulge=.94+.055*Math.sin(a*5)+rng()*.045;
+  const x=Math.cos(a)*r*1.13*bulge,y=2.30+vertical*.94*bulge,z=Math.sin(a)*r*1.06*bulge;
+  const normal=new T.Vector3(x/1.13,(y-2.30)/.94,z/1.06).normalize();const rotation=new T.Euler().setFromQuaternion(new T.Quaternion().setFromUnitVectors(new T.Vector3(0,1,0),normal));
+  const shade=Math.max(0,Math.min(3,Math.floor((vertical+1)*1.4+(-x+z)*.25+rng()*.6)));
+  b.add(leafForm,material(cs[shade]),x,y,z,.125+rng()*.035,.045,.20+rng()*.055,rotation.x,rotation.y+rng()*.25,rotation.z);
  }
- for(let i=0;i<6;i++){const a=i*1.05;b.pole('#80502b',Math.sin(a)*.14,.08,Math.cos(a)*.14,.07,.42,Math.cos(a)*.9,0,Math.sin(a)*.9)}
 }
 function pond(b,large){
  const rx=large?1.5:.89,rz=large?1.2:.66,rng=random(91);
@@ -130,7 +145,7 @@ export function itemModel(key,house={}){
  else if(key==='pond_garden'||key==='pond_small')pond(b,key==='pond_garden');
  else if(key==='dock_wood'||key.includes('bridge')){
   const long=key==='dock_wood'?2.6:1.7;for(let i=0;i<12;i++)b.box(i%3?'#b67a43':'#d39555',0,.13,-long/2+(i+.5)*long/12,1.42,.14,long/12-.016);
-  for(const x of [-.63,.63])for(const z of [-long/2+.16,long/2-.16]){b.pole('#8c5c36',x,-.22,z,.09,1.3);b.pole('#e0c68e',x,.47,z,.115,.1)}
+  for(const x of [-.63,.63])for(const z of [-long/2+.16,long/2-.16]){b.pole('#8c5c36',x,-.40,z,.09,1.66);b.pole('#e0c68e',x,.47,z,.115,.1)}
   for(const x of [-.54,.54])b.box('#825532',x,-.02,0,.12,.22,long);
  }
  else if(key==='beach_chair'){
