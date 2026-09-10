@@ -11,3 +11,11 @@
 @media(max-width:370px){.w18-add{padding:20px 14px;gap:10px}.w18-add>b{display:none}.w18-day,.w18-plan{padding:18px}.w18-trip-options{grid-template-columns:1fr}.w18-harbour-intro>div{max-width:83%}.w18-world-boat{top:166px}.w18-voyage>div{max-width:76%}}
 @media(min-width:700px){.w18-add{padding:30px}.w18-add strong{font-size:29px}.w18-mission b{font-size:16px}.w18-voyage h2{font-size:32px}.w18-voyage svg{width:37%}.w18-harbour-intro{min-height:220px}.w18-harbour-intro svg{width:38%}}
 @media(prefers-reduced-motion:reduce){.w18-today *,.w18-harbour *{scroll-behavior:auto;animation:none!important;transition:none!important}}
+/* Readable articles and a quiet daily shelf. */
+.k14-article .article-inner{max-width:680px;margin:auto;padding-inline:24px}
+.k14-article .article-body{font-size:18px;line-height:1.8;overflow-wrap:break-word}
+.k14-article .article-body p{margin:0 0 1.35em;white-space:pre-line}
+.k14-article .article-lead{font-size:20px;line-height:1.55}
+.k14-article h1{line-height:1.2;text-wrap:balance}
+.k19-list .knowledge h3{line-height:1.35}.k19-list .knowledge p{display:none}
+.k19-read{display:block;color:var(--muted,#557468);padding:0 16px 12px}.k19-finished{text-align:center;font-weight:700}

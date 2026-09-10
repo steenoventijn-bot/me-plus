@@ -1,10 +1,10 @@
 [
   {
     "slug": "bomen-netwerk",
-    "question": "Wat krijgen mycorrhizaschimmels van planten in ruil voor hun hulp bij water en mineralen?",
+    "question": "Wat krijgen wortelschimmels van planten in ruil voor water en voedingsstoffen?",
     "options": [
       "Zuurstofrijke bloedcellen",
-      "Koolstofrijke suikers uit fotosynthese",
+      "Suikers die de plant met zonlicht maakt",
       "Kleine stukjes boomschors",
       "Warmte uit de boomstam"
     ],
@@ -18,7 +18,7 @@
       "Omdat daar nooit overstromingen voorkwamen",
       "Omdat landbouw daar overbodig was",
       "Omdat alle handelaren er dezelfde taal spraken",
-      "Omdat goederen en mensen er efficiënt konden samenkomen"
+      "Omdat spullen en mensen er makkelijk konden samenkomen"
     ],
     "correct": 3,
     "explanation": "Goede verbindingen maakten transport, handel, opslag en ambachten aantrekkelijk."
@@ -27,7 +27,7 @@
     "slug": "culturele-tijdzones",
     "question": "Waarom gingen plaatsen over van lokale zonnetijd naar standaardtijd?",
     "options": [
-      "Om spoorwegen en communicatie over grotere gebieden te synchroniseren",
+      "Om treintijden en berichten tussen plaatsen op elkaar af te stemmen",
       "Omdat de zon overal tegelijk opkwam",
       "Omdat alle landen één regering kregen",
       "Om de lengte van een dag te veranderen"
@@ -37,7 +37,7 @@
   },
   {
     "slug": "geheugen-reconstructie",
-    "question": "Wat bedoelt de tekst met het reconstructieve karakter van geheugen?",
+    "question": "Waarom is je geheugen geen perfecte opname?",
     "options": [
       "Elke herinnering blijft een exacte video",
       "Alleen emoties worden opgeslagen",
@@ -66,7 +66,7 @@
       "Elke satelliet bestuurt één app",
       "De vierde satelliet maakt de kaartfoto",
       "Vier signalen zijn nodig om wifi aan te zetten",
-      "Je telefoon moet drie coördinaten én een klokfout bepalen"
+      "Je telefoon berekent zijn plek in drie richtingen én een klokfout"
     ],
     "correct": 3,
     "explanation": "Naast drie ruimtelijke coördinaten moet het toestel de kleine afwijking van zijn eigen klok oplossen."
@@ -93,7 +93,7 @@
       "Ze vervangen de kieuwen tijdens zwemmen"
     ],
     "correct": 2,
-    "explanation": "De branchiale harten sturen bloed door de kieuwen. Het centrale hart pompt het zuurstofrijke bloed door het lichaam."
+    "explanation": "De twee kieuw-harten sturen bloed door de kieuwen. Het centrale hart pompt het zuurstofrijke bloed door het lichaam."
   },
   {
     "slug": "olbers-paradox-dark-night",
@@ -114,7 +114,7 @@
       "Omdat plannen dan overbodig is",
       "Omdat de hele taak vanzelf verdwijnt",
       "Omdat je eerst maximale motivatie nodig hebt",
-      "Omdat de emotionele drempel om te beginnen lager wordt"
+      "Omdat beginnen dan minder zwaar voelt"
     ],
     "correct": 3,
     "explanation": "Een kleine, concrete start maakt een onzekere of onaangename taak minder overweldigend."
@@ -123,7 +123,7 @@
     "slug": "qr-foutcorrectie",
     "question": "Hoe kan een scanner beschadigde informatie in een QR-code herstellen?",
     "options": [
-      "Met extra, redundante informatie in de code",
+      "Met extra informatie in de code",
       "Door altijd het origineel van internet te downloaden",
       "Door de drie grote vierkanten als tekst te lezen",
       "Door ontbrekende vakjes willekeurig in te vullen"
@@ -153,7 +153,7 @@
       "Inflatie"
     ],
     "correct": 1,
-    "explanation": "Consolidatie helpt nieuwe herinneringen te stabiliseren en aan bestaande kennis te koppelen."
+    "explanation": "Consolidatie maakt herinneringen sterker en verbindt ze met wat je al weet."
   },
   {
     "slug": "whales-carbon-cycle",
@@ -171,7 +171,7 @@
     "slug": "why-interest-rates-matter",
     "question": "Waarom kan een bedrijf een investering uitstellen wanneer rente stijgt?",
     "options": [
-      "Duurdere financiering kan het project minder aantrekkelijk maken",
+      "Een duurdere lening kan het project te duur maken",
       "Bestaande leningen verdwijnen dan",
       "Hogere rente maakt investeringen altijd winstgevender",
       "Rente beïnvloedt alleen spaargeld"
